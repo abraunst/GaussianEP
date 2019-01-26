@@ -1,0 +1,8 @@
+name = "GaussianEP"
+uuid = 
+author = ["Alfredo Braunstein <alfredo.braunstein@polito.it>"]
+version = "1.0.0"
+
+[deps]
+ExtractMacro = "f86d3d12-fd5b-522c-99e9-61577282a1e9"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
