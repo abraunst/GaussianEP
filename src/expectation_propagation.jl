@@ -34,7 +34,7 @@ Mandatory arguments:
 
 * If F::Array{Real,2} with is included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\bf{d}-\\bf{y})`` is added.
 """
-function EP(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = Matrix{T}(undef,0,size(P0,1)), d::AbstractVector{T} = zeros(T,size(F,1));
+function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = Matrix{T}(undef,0,size(P0,1)), d::AbstractVector{T} = zeros(T,size(F,1));
                      maxiter::Int = 2000,
                      callback = (x...)->nothing,
                      state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
