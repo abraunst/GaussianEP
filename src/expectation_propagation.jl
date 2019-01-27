@@ -1,4 +1,4 @@
-using Random
+using Random, LinearAlgebra, ExtractMacro
 
 function update_err!(dst, i, val)
     r=abs(val - dst[i])
@@ -19,22 +19,64 @@ struct EPState{T}
     s::Vector{T}
 end
 
-EPState{T}(N, Nx) where {T <: Real} = EPState{T}(Matrix{T}(undef,Nx,Nx), zeros(T,Nx), Matrix{T}(undef,Nx,Nx), zeros(T,Nx),zeros(T,N), zeros(T,N), zeros(T,N), zeros(T,N), ones(T,N), ones(T,N))
 
 
 """
-EP for
+    EPState(N, Nx)
+"""
+EPState{T}(N, Nx = N) where {T <: Real} = EPState{T}(Matrix{T}(undef,Nx,Nx), zeros(T,Nx), Matrix{T}(undef,Nx,Nx), zeros(T,Nx),zeros(T,N), zeros(T,N), zeros(T,N), zeros(T,N), ones(T,N), ones(T,N))
+
+
+"""
+    expectation_propagation(H::Vector{Term{T}}, P0::Vector{Prior}, F::AbstrctMatrix{T} = zeros(0,length(P0)), d::Vector{T} = zeros(size(F,1));
+        maxiter::Int = 2000,
+        callback = (x...)->nothing,
+        # state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
+        damp::T = 0.9,
+        epsconv::T = 1e-6,
+        maxvar::T = 1e50,
+        minvar::T = 1e-50,
+        inv::Function = inv) where {T <: Real, P <: Prior}
+
+
+EP for approximate inference of
 
 ``P(\\bf{x})=\\frac1Z exp(-\\frac12\\bf{x}' A \\bf{x} + \\bf{x'} \\bf{y}))×\\prod_i p_{i}(x_i)``
 
-Mandatory arguments:
+Arguments:
 
-* A::Array{Term},
-* P0::Array{Prior}
+* A::Array{Term{T}}: Gaussian Term (involving only x)
+* P0::Array{Prior}: Prior terms (involving x and y)
+* F::AbstractMatrix{T}: If included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\bf{d}-\\bf{y})`` is added.
 
-* If F::Array{Real,2} with is included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\bf{d}-\\bf{y})`` is added.
+Optional named arguments:
+
+* maxiter::Int = 2000: maximum number of iterations
+* callback = (x...)->nothing: your own function to report progress, see [`ProgressReporter`](@ref)
+* state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]): If supplied, all internal state is updated here
+* damp::T = 0.9: damping parameter
+* epsconv::T = 1e-6: convergence criterion
+* maxvar::T = 1e50: maximum variance
+* minvar::T = 1e-50: minimum variance
+* inv::Function = inv: invertor method
+
+# Example
+
+```jldoctest
+julia> t=Term(zeros(2,2),zeros(2),1.0)
+Term{Float64}([0.0 0.0; 0.0 0.0], [0.0, 0.0], 0.0, 1.0, 0.0, 0.0)
+
+julia> P=[IntervalPrior(i...) for i in [(0,1),(0,1),(-2,2)]]
+3-element Array{IntervalPrior{Int64},1}:
+ IntervalPrior{Int64}(0, 1) 
+ IntervalPrior{Int64}(0, 1) 
+ IntervalPrior{Int64}(-2, 2)
+
+julia> expectation_propagation([t], P, F)
+([0.49568, 0.49568, 0.991368], [0.0824593, 0.0824593, 0.160588], [0.33198, 0.33198, 0.999994], [3.20716, 3.20716, 0.169288], :converged)
+```
 """
-function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = Matrix{T}(undef,0,size(P0,1)), d::AbstractVector{T} = zeros(T,size(F,1));
+function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
                      maxiter::Int = 2000,
                      callback = (x...)->nothing,
                      state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),

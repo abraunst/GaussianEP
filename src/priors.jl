@@ -1,5 +1,4 @@
-using FastGaussQuadrature
-using ForwardDiff
+using FastGaussQuadrature, ForwardDiff
 
 Φ(x) = 0.5*(1+erf(x/sqrt(2.0)))
 ϕ(x) = exp(-x.^2/2)/sqrt(2π)

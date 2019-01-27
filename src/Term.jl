@@ -26,7 +26,7 @@ function (t::Term)(v::Vector)
     return v⋅(t.A*v-2*t.y) + t.c
 end
 
-function updateβ(t::Term, v)
+function updateβ(t::Term{T}, v) where T
     if t.δβ > 0
         t.β = t.δβ * t.M / t(v) + (1-t.δβ) * t.β
     end
