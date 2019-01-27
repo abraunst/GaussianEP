@@ -9,17 +9,25 @@ Abstract Univariate Prior type
 abstract type Prior end
 
 """
-input: ``p_0,μ,σ``
+    moments(p0::T, μ, σ) where T <:Prior -> (mean, variance)
 
-returns: mean and variance of
+    input: ``p_0, μ, σ``
 
-`` p(x) ∝ p_0(x) \\mathcal{N}(x;μ,σ) ``
+    output: mean and variance of
+
+    `` p(x) ∝ p_0(x) \\mathcal{N}(x;μ,σ) ``
 """
 function moments(p0::T, μ, σ) where T <: Prior
     error("undefined moment calculation, assuming uniform prior")
     return μ,σ^2
 end
 
+"""
+
+    gradient(p0::T, μ, σ) -> nothing
+
+    update parameters with a single learning gradient step (learning rate is stored in p0)
+"""
 function gradient(p0::T, μ, σ) where T <: Prior
     #by default, do nothing
     return
