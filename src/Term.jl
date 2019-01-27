@@ -13,14 +13,14 @@ as is represented by an Vector{Term}. Note that c and M are only needed for para
 struct Term{T <: Real}
     A::Matrix{T}
     y::Vector{T}
-    c::Real
-    β::Real
+    c::T
+    β::T
     # for parameter learning
-    δβ::Real
-    M::Real
+    δβ::T
+    M::T
 end
 
-Term(A,y,β = 1) = Term(A,y,0,β,0,0)
+Term(A,y,β = 1.0) = Term(A,y,0.0,β,0.0,0.0)
 
 function (t::Term)(v::Vector)
     return v⋅(t.A*v-2*t.y) + t.c
@@ -32,7 +32,7 @@ function updateβ(t::Term, v)
     end
 end
 
-function sum!(A::Matrix{T}, y::Vector{T}, H::Vector) where T <: Real
+function sum!(A::Matrix{T}, y::Vector{T}, H::Vector{Term{T}}) where T <: Real
     fill!(A, zero(T))
     fill!(y, zero(T))
     for i=1:size(H,1)

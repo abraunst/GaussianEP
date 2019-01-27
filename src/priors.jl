@@ -7,8 +7,7 @@ using ForwardDiff
 """
 Abstract Univariate Prior type
 """
-abstract type Prior
-end
+abstract type Prior end
 
 """
 input: ``p_0,μ,σ``
@@ -17,7 +16,6 @@ returns: mean and variance of
 
 `` p(x) ∝ p_0(x) \\mathcal{N}(x;μ,σ) ``
 """
-
 function moments(p0::T, μ, σ) where T <: Prior
     error("undefined moment calculation, assuming uniform prior")
     return μ,σ^2
@@ -76,7 +74,6 @@ Parameters: ρ,λ
 
 `` p_0(x) ∝ (1-ρ) δ(x) + ρ \\mathcal{N}(x;0,λ^{-1}) ``
 """
-
 struct SpikeSlabPrior{T<:Real} <: Prior
     ρ::T
     λ::T
@@ -272,8 +269,10 @@ function pdf_cf(x)
     return sqrt(2/pi)*exp(-x^2/2)/(1+erf(x/sqrt(2)))
 end
 
-struct ThetaPrior <: Prior
-end
+"""
+A θ(x) prior
+"""
+struct ThetaPrior <: Prior end
 
 
 function moments(::ThetaPrior,μ,σ)
