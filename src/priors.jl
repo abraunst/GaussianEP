@@ -81,7 +81,7 @@ Parameters: ρ,λ
 
 `` p_0(x) ∝ (1-ρ) δ(x) + ρ \\mathcal{N}(x;0,λ^{-1}) ``
 """
-struct SpikeSlabPrior{T<:Real} <: Prior
+mutable struct SpikeSlabPrior{T<:Real} <: Prior
     ρ::T
     λ::T
     δρ::T
@@ -214,7 +214,7 @@ function moments(p0::QuadraturePrior, μ, σ)
     return av, va
 end
 
-struct AutoPrior{T<:Real} <: Prior
+mutable struct AutoPrior{T<:Real} <: Prior
     #real arguments
     f
     P::Vector{T}
