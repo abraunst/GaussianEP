@@ -5,5 +5,5 @@ TODO:
 
 
 - multivariate factors
-- use Distributions? @cossio added a good truncated gaussian there apparently
+- use `Distributions`? @cossio added a good truncated gaussian there apparently
 - ...
