@@ -10,14 +10,14 @@ The complete energy function is given by
 as is represented by an Vector{Term}. Note that c and M are only needed for paramenter learning
 """
 
-struct Term{T <: Real}
+mutable struct Term{T <: Real}
     A::Matrix{T}
     y::Vector{T}
     c::T
     β::T
     # for parameter learning
     δβ::T
-    M::T
+    M::Int
 end
 
 Term(A,y,β = 1.0) = Term(A,y,0.0,β,0.0,0.0)
