@@ -1,7 +1,0 @@
-module TestPrior
-
-# test spike and slab
-
-spikeandslaabmom(μ,σ,ρ,λ) = GaussianEP.moments(SpikeSlabPrior(ρ,λ,0.0,0.0),μ,σ)
-
-@test isapprox.(spikeandslabmom(1.0,0.12,-1.9,13.0), (-0.0892857,7.94173)) == (true,true)
