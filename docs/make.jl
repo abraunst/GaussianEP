@@ -1,6 +1,6 @@
 using Documenter, GaussianEP
 
-makedocs()
+makedocs(sitename="GaussianEP")
 deploydocs(
 	   repo = "github.com/abraunst/GaussianEP.jl.git",
 )
