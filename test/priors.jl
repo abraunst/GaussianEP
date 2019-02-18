@@ -13,5 +13,5 @@ end
 
 
 spike_and_slab_test()
-printstyled("All tests passed!\n",color=:green,bold=true)
+printstyled("All TestPrior tests passed!\n",color=:green,bold=true)
 end #end module
