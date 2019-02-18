@@ -13,4 +13,4 @@ branches:
   - master
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia --inline=no -e 'using Pkg; Pkg.add(PackageSpec(url=pwd())); Pkg.build("GaussianEP"); Pkg.test("GaussianEP"; coverage=true)'
+  - julia --inline=no -e 'using Pkg; Pkg.build("GaussianEP"); Pkg.test("GaussianEP"; coverage=true)'
