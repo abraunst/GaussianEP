@@ -11,7 +11,14 @@ function spike_and_slab_test()
     @test isapprox.(spikeandslabmom(6.0,2.0,0.2,2.0), (0.1865693402764403,0.2139510016374009),atol=1e-12) == (true,true)
 end
 
+intervalmom(μ,σ,lb,ub) = GaussianEP.moments(IntervalPrior(lb,ub),μ,σ)
+function uniform_test()
+    @test isapprox.(intervalmom(-4.0,1.0,0.0,1000.0), (0.2256071444894706679029638,0.0466728383974225474739583319205),atol=1e-12) == (true,true)
+    @test isapprox.(intervalmom(-5.0,1.0,0.0,1000.0), (0.1865039670969923790710964794,0.0326964346120545146234803723928052),atol=1e-8) == (true,true) # this test require a lower precision ... maybe a better asymptotic expansion 
+end
 
 spike_and_slab_test()
+uniform_test()
+
 printstyled("All TestPrior tests passed!\n",color=:green,bold=true)
 end #end module
