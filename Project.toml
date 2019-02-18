@@ -4,6 +4,7 @@ author = ["Alfredo Braunstein <alfredo.braunstein@polito.it>"]
 version = "1.0.0"
 
 [deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ExtractMacro = "f86d3d12-fd5b-522c-99e9-61577282a1e9"
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
