@@ -1,5 +1,8 @@
 module GaussianEP
 
+export expectation_propagation, Term, EPState
+export Prior, IntervalPrior, SpikeSlabPrior, BinaryPrior, GaussianPrior, PosteriorPrior, QuadraturePrior, AutoPrior, ThetaPrior
+
 using ExtractMacro, SpecialFunctions, LinearAlgebra
 
 
@@ -8,7 +11,5 @@ include("priors.jl")
 include("expectation_propagation.jl")
 include("ProgressReporter.jl")
 
-export expectation_propagation, Term
-export Prior, IntervalPrior, SpikeSlabPrior, BinaryPrior, GaussianPrior, PosteriorPrior, QuadraturePrior, AutoPrior, ThetaPrior
 
 end # end module

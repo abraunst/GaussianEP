@@ -1,10 +1,11 @@
 using Documenter, GaussianEP
 
 push!(LOAD_PATH,"../src/")
-makedocs(sitename="GaussianEP")
+makedocs(sitename = "GaussianEP",
+	 modules = [GaussianEP],
+	 doctest = true)
 deploydocs(
 	   branch = "gh-pages",
 	   repo = "github.com/abraunst/GaussianEP.git",
-	   devurl = "dev",
-	   versions = ["stable" => "v^", "v#.#", devurl => devurl]
-)
+	   versions = ["stable" => "v^"]
+	  )

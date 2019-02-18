@@ -1,5 +1,9 @@
 using ProgressMeter, Printf
 
+"""
+    ProgressReporter
+    A function object to report on a running expectation_propagation.
+"""
 mutable struct ProgressReporter
     t::Int
     prog::ProgressMeter.Progress

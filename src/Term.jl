@@ -9,7 +9,6 @@ The complete energy function is given by
 
 as is represented by an Vector{Term}. Note that c and M are only needed for paramenter learning
 """
-
 mutable struct Term{T <: Real}
     A::Matrix{T}
     y::Vector{T}
@@ -20,7 +19,7 @@ mutable struct Term{T <: Real}
     M::Int
 end
 
-Term(A,y,β = 1.0) = Term(A,y,0.0,β,0.0,0.0)
+Term(A,y,β = 1.0) = Term(A,y,0.0,β,0.0,0)
 
 function (t::Term)(v::Vector)
     return v⋅(t.A*v-2*t.y) + t.c
@@ -35,7 +34,7 @@ end
 function sum!(A::Matrix{T}, y::Vector{T}, H::Vector{Term{T}}) where T <: Real
     fill!(A, zero(T))
     fill!(y, zero(T))
-    for i=1:size(H,1)
+    for i=1:length(H)
         A .+= H[i].β * H[i].A
         y .+= H[i].β * H[i].y
     end

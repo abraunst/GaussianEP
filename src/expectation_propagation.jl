@@ -1,11 +1,18 @@
 using Random, LinearAlgebra, ExtractMacro
 
+```@meta
+CurrentModule = GaussianEP
+```
+
 function update_err!(dst, i, val)
     r=abs(val - dst[i])
     dst[i] = val
     return r
 end
 
+"""
+    Instantaneous state of an expectation propagation run.
+"""
 struct EPState{T}
     A::Matrix{T}
     y::Vector{T}
@@ -21,14 +28,11 @@ end
 
 
 
-"""
-    EPState(N, Nx)
-"""
 EPState{T}(N, Nx = N) where {T <: Real} = EPState{T}(Matrix{T}(undef,Nx,Nx), zeros(T,Nx), Matrix{T}(undef,Nx,Nx), zeros(T,Nx),zeros(T,N), zeros(T,N), zeros(T,N), zeros(T,N), ones(T,N), ones(T,N))
 
 
 """
-    expectation_propagation(H::Vector{Term{T}}, P0::Vector{Prior}, F::AbstrctMatrix{T} = zeros(0,length(P0)), d::Vector{T} = zeros(size(F,1));
+    expectation_propagation(H::Vector{Term{T}}, P0::Vector{Prior}, F::AbstractMatrix{T} = zeros(0,length(P0)), d::Vector{T} = zeros(size(F,1));
         maxiter::Int = 2000,
         callback = (x...)->nothing,
         # state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
@@ -64,7 +68,7 @@ Optional named arguments:
 
 ```jldoctest
 julia> t=Term(zeros(2,2),zeros(2),1.0)
-Term{Float64}([0.0 0.0; 0.0 0.0], [0.0, 0.0], 0.0, 1.0, 0.0, 0.0)
+Term{Float64}([0.0 0.0; 0.0 0.0], [0.0, 0.0], 0.0, 1.0, 0.0, 0)
 
 julia> P=[IntervalPrior(i...) for i in [(0,1),(0,1),(-2,2)]]
 3-element Array{IntervalPrior{Int64},1}:
@@ -72,8 +76,10 @@ julia> P=[IntervalPrior(i...) for i in [(0,1),(0,1),(-2,2)]]
  IntervalPrior{Int64}(0, 1) 
  IntervalPrior{Int64}(-2, 2)
 
+julia> F=[1.0 -1.0];
+
 julia> expectation_propagation([t], P, F)
-([0.49568, 0.49568, 0.991368], [0.0824593, 0.0824593, 0.160588], [0.33198, 0.33198, 0.999994], [3.20716, 3.20716, 0.169288], :converged)
+([0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.489862, 0.489862, 3.66599e-15], [334.018, 334.018, 0.204341], :converged)
 ```
 """
 function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
