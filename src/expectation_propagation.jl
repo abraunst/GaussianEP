@@ -51,7 +51,7 @@ Arguments:
 
 * A::Array{Term{T}}: Gaussian Term (involving only x)
 * P0::Array{Prior}: Prior terms (involving x and y)
-* F::AbstractMatrix{T}: If included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\bf{d}-\\bf{y})`` is added.
+* F::AbstractMatrix{T}: If included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\\bf{d}-\\bf{y})`` is added.
 
 Optional named arguments:
 
