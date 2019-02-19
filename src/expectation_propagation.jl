@@ -40,7 +40,7 @@ EPState{T}(N, Nx = N) where {T <: Real} = EPState{T}(Matrix{T}(undef,Nx,Nx), zer
         epsconv::T = 1e-6,
         maxvar::T = 1e50,
         minvar::T = 1e-50,
-        inv::Function = inv) where {T <: Real, P <: Prior}
+        inverter::Function = inv) where {T <: Real, P <: Prior}
 
 
 EP for approximate inference of
@@ -62,7 +62,7 @@ Optional named arguments:
 * `epsconv::T = 1e-6`: convergence criterion
 * `maxvar::T = 1e50`: maximum variance
 * `minvar::T = 1e-50`: minimum variance
-* `inv::Function = inv`: invertor method
+* `inverter::Function = inv`: inverter method
 
 # Example
 
@@ -90,7 +90,7 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
                      epsconv::T = 1e-6,
                      maxvar::T = 1e50,
                      minvar::T = 1e-50,
-                     inv::Function = inv) where {T <: Real, P <: Prior}
+                     inverter::Function = inv) where {T <: Real, P <: Prior}
     @extract state A y Σ v av va a μ b s
     Ny,Nx = size(F)
     N = Nx + Ny
@@ -100,7 +100,7 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
         sum!(A,y,H)
         Δμ, Δs, Δav, Δva = 0.0, 0.0, 0.0, 0.0
         A .+= Diagonal(1 ./ b[1:Nx]) .+ Fp * Diagonal(1 ./ b[Nx+1:end]) * F
-        Σ .= inv(A)
+        Σ .= inverter(A)
         v .= Σ * (y .+ a[1:Nx] ./ b[1:Nx] .+ Fp * ((a[Nx+1:end]-d) ./ b[Nx+1:end]))
         for i in 1:N
             if i <= Nx
