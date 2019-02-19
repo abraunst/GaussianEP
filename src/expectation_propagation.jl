@@ -31,7 +31,7 @@ EPState{T}(N, Nx = N) where {T <: AbstractFloat} = EPState{T}(Matrix{T}(undef,Nx
 Output of EP algorithm
 
 """
-struct OutEP{T<:AbstractFloat}
+struct EPOut{T<:AbstractFloat}
     av::Vector{T}
     va::Vector{T}
     μ::Vector{T}
@@ -39,9 +39,9 @@ struct OutEP{T<:AbstractFloat}
     converged::Symbol
     state::EPState{T}
 end
-function OutEP(s, converged::Symbol) where {T <: AbstractFloat}
+function EPOut(s, converged::Symbol) where {T <: AbstractFloat}
     converged ∈ (:converged,:uncoverged) || error("$converged is not a valid symbol")
-    return OutEP(s.av,s.va, s.μ,s.s,converged,s)
+    return EPOut(s.av,s.va, s.μ,s.s,converged,s)
 end
 
 """
@@ -92,7 +92,7 @@ julia> P=[IntervalPrior(i...) for i in [(0,1),(0,1),(-2,2)]]
 julia> F=[1.0 -1.0];
 
 julia> res = expectation_propagation([t], P, F)
-GaussianEP.OutEP{Float64}([0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.489862, 0.489862, 3.66599e-15], [334.018, 334.018, 0.204341], :converged, EPState{Float64}([9.79055 -0.00299477; -0.00299477 9.79055], [0.0, 0.0], [0.102139 3.12427e-5; 3.12427e-5 0.102139], [0.489862, 0.489862], [0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.490876, 0.490876, -1.86785e-17], [0.489862, 0.489862, 3.66599e-15], [0.100288, 0.100288, 403.599], [334.018, 334.018, 0.204341]))
+GaussianEP.EPOut{Float64}([0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.489862, 0.489862, 3.66599e-15], [334.018, 334.018, 0.204341], :converged, EPState{Float64}([9.79055 -0.00299477; -0.00299477 9.79055], [0.0, 0.0], [0.102139 3.12427e-5; 3.12427e-5 0.102139], [0.489862, 0.489862], [0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.490876, 0.490876, -1.86785e-17], [0.489862, 0.489862, 3.66599e-15], [0.100288, 0.100288, 403.599], [334.018, 334.018, 0.204341]))
 ```
 """
 function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
@@ -154,8 +154,8 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
         end
         callback(av,Δav,epsconv,maxiter,H,P0)
         if Δav < epsconv
-            return OutEP(state, :converged)
+            return EPOut(state, :converged)
         end
     end
-    return OutEP(state, :unconverged)
+    return EPOut(state, :unconverged)
 end
