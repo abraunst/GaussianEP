@@ -14,7 +14,7 @@ function simple_ep_test()
     @test sum(abs, res.va - va0) < 1e-9
     @test sum(abs, res.μ - μ0) < 1e-9
     @test sum(abs, res.s - s0) < 1e-9
-    # test precision to 1e-9 to comply to 32 bit
+    # test precision to 1e-9 to comply with 32 bit
 end
 
 
