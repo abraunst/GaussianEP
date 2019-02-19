@@ -7,9 +7,9 @@ using ProgressMeter, Printf
 mutable struct ProgressReporter
     t::Int
     prog::ProgressMeter.Progress
-    function ProgressReporter(X)
+    function ProgressReporter()
         println(stderr, "   it Δav                            Progress")
-        return new(0, ProgressMeter.Progress(10000, ""),X)
+        return new(0, ProgressMeter.Progress(10000, ""))
     end
 end
 
