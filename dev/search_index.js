@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Gaussian EP Documentation",
     "title": "GaussianEP.Term",
     "category": "type",
-    "text": "This type represents an interaction term in the energy function of the form\n\n``β_i (\\frac12 x\'Ax + x\'y + c) + M_i \\log β_i``\n\nThe complete energy function is given by\n\n``∑_i β_i (\\frac12 x\' A_i x + x\' y_i + c_i) + M_i log β_i``\n\nas is represented by an Vector{Term}. Note that c and M are only needed for paramenter learning\n\n\n\n\n\n"
+    "text": "This type represents an interaction term in the energy function of the form\n\nβ_i (frac12 xAx + xy + c) + M_i log β_i\n\nThe complete energy function is given by\n\n_i β_i (frac12 x A_i x + x y_i + c_i) + M_i log β_i\n\nas is represented by an Vector{Term}. Note that c and M are only needed for paramenter learning\n\n\n\n\n\n"
 },
 
 {
