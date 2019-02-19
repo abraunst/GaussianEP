@@ -1,6 +1,6 @@
 using GaussianEP,Test
 
-tests = ["priors"]
+tests = ["priors", "ep"]
 
 printstyled("Running tests:\n", color=:blue)
 
