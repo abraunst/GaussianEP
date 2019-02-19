@@ -40,7 +40,7 @@ struct EPOut{T<:AbstractFloat}
     state::EPState{T}
 end
 function EPOut(s, converged::Symbol) where {T <: AbstractFloat}
-    converged ∈ (:converged,:uncoverged) || error("$converged is not a valid symbol")
+    converged ∈ (:converged,:unconverged) || error("$converged is not a valid symbol")
     return EPOut(s.av,s.va, s.μ,s.s,converged,s)
 end
 
