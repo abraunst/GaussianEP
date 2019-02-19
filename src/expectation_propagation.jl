@@ -25,9 +25,12 @@ struct EPState{T<:AbstractFloat}
     b::Vector{T}
     s::Vector{T}
 end
-
 EPState{T}(N, Nx = N) where {T <: AbstractFloat} = EPState{T}(Matrix{T}(undef,Nx,Nx), zeros(T,Nx), Matrix{T}(undef,Nx,Nx), zeros(T,Nx),zeros(T,N), zeros(T,N), zeros(T,N), zeros(T,N), ones(T,N), ones(T,N))
 
+"""
+Output of EP algorithm
+
+"""
 struct OutEP{T<:AbstractFloat}
     av::Vector{T}
     va::Vector{T}
@@ -36,7 +39,6 @@ struct OutEP{T<:AbstractFloat}
     converged::Symbol
     state::EPState{T}
 end
-
 function OutEP(s, converged::Symbol) where {T <: AbstractFloat}
     converged ∈ (:converged,:uncoverged) || error("$converged is not a valid symbol")
     return OutEP(s.av,s.va, s.μ,s.s,converged,s)
@@ -152,10 +154,8 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
         end
         callback(av,Δav,epsconv,maxiter,H,P0)
         if Δav < epsconv
-            #return av, va, μ, s, :converged
             return OutEP(state, :converged)
         end
     end
     return OutEP(state, :unconverged)
-    #return av, va, μ, s, :unconverged
 end
