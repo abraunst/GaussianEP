@@ -14,6 +14,8 @@ branches:
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia --inline=no -e 'using Pkg; Pkg.build("GaussianEP"); Pkg.test("GaussianEP"; coverage=true)'
+after_success:
+  - julia -e 'cd(Pkg.dir("GaussianEP")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
 
 jobs:
   include:
@@ -26,5 +28,3 @@ jobs:
         - julia --project=docs/ docs/make.jl
       after_success: skip
 
-after_success:
-  - julia -e 'cd(Pkg.dir("MyPkg")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
