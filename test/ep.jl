@@ -10,11 +10,13 @@ function simple_ep_test()
     μ0 = [0.4898618134668008,0.4898618134668008,3.665993043660408e-15]
     s0 = [334.0179053087342,334.0179053087342,0.20434113796777062]
     res = expectation_propagation([t], P, F)
-    @test sum(abs, res.av - av0) < 1e-12
-    @test sum(abs, res.va - va0) < 1e-12
-    @test sum(abs, res.μ - μ0) < 1e-12
-    @test sum(abs, res.s - s0) < 1e-12    
+    @test sum(abs, res.av - av0) < 1e-9
+    @test sum(abs, res.va - va0) < 1e-9
+    @test sum(abs, res.μ - μ0) < 1e-9
+    @test sum(abs, res.s - s0) < 1e-9
+    # test precision to 1e-9 to comply to 32 bit
 end
+
 
 simple_ep_test()
 
