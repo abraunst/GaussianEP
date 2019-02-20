@@ -129,14 +129,14 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
                 Δs = max(Δs, update_err!(s, i, clamp(1/(1/ss - 1/b[i]), minvar, maxvar)))
                 Δμ = max(Δμ, update_err!(μ, i, s[i] * (vv/ss - a[i]/b[i])))
             else
-                ss == b[i] && warn("infinite var, ss = ", ss)
+                ss == b[i] && @warn "infinite var, ss = $ss"
                 Δs = max(Δs, update_err!(s, i, maxvar))
                 Δμ = max(Δμ, update_err!(μ, i, 0))
             end
             tav, tva = moments(P0[i], μ[i], sqrt(s[i]));
             Δav = max(Δav, update_err!(av, i, tav))
             Δva = max(Δva, update_err!(va, i, tva))
-            (isnan(av[i]) || isnan(va[i])) && warn("avnew = $(av[i]) varnew = $(va[i])")
+            (isnan(av[i]) || isnan(va[i])) && @warn "avnew = $(av[i]) varnew = $(va[i])"
 
             new_b = clamp(1/(1/va[i] - 1/s[i]), minvar, maxvar)
             new_a = av[i] + new_b * (av[i] - μ[i])/s[i]
