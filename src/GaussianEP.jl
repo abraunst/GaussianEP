@@ -9,5 +9,7 @@ include("Term.jl")
 include("priors.jl")
 include("expectation_propagation.jl")
 include("ProgressReporter.jl")
+include("Factor.jl")
+include("ep.jl")
 
 end # end module
