@@ -1,3 +1,5 @@
+using ExtractMacro
+
 eye(N) = Matrix(1.0I, N, N)
 
 function update!(old, new, ρ=0.0)
@@ -13,65 +15,90 @@ EP
 struct EPState2{T <: Real}
     Σ   :: Matrix{T}
     μ   :: Vector{T}
-    S   :: Vector{Matrix{T}}
+    J   :: Vector{Matrix{T}}
     h   :: Vector{Vector{T}}
+    FG  :: FactorGraph
 end
 
 function EPState2(FG::FactorGraph)
     d(a) = length(FG.idx[a])
-    M = length(FG.idx)
-    return EPState(zeros(N,N), zeros(N),
-                   [zeros(d(a),d[a]) for a=1:M],
-                   [zeros(d[a]) for a=1:M])
+    M,N = length(FG.idx), FG.N
+    return EPState2(eye(N), zeros(N),
+                    [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
+                    FG)
 end
 
-function update!(state::EPState2, ψ::Factor, a::Int, ρ::Real, epsvar2::Real)
-    @extract state : Sc, yc, S, y, Σ, μ
-    ∂a = ψ.idx;
-    S[a] .= (Σ[∂a, ∂a] + epsvar2 * I)\eye(length(∂a)) .- S[a]
-    y[a] .= (Σ[∂a, ∂a] + epsvar2 * I)\μ[∂a] .- h[a]
-    av, cov = moments(ψ[a], y[a], S[a])
-    icov = inv(cov + epsvar * I)
-    return max(update!(S[a], icov - S[a]), update!(y[a], icov * av - y[a]))
+function update!(state::EPState2, ψ::Factor, a::Int, ρ::Real)
+    @extract state : Σ μ J h FG
+    ∂a = FG.idx[a]
+    # J, h are cavity coeffs
+    Jc = Σ[∂a, ∂a]\I .- J[a]
+    hc = Σ[∂a, ∂a]\μ[∂a] .- h[a]
+    # JJ, hh are moments
+    hh, JJ = moments(ψ, hc, Jc)
+    # JJ, hh are now total exponents
+    JJ .= JJ\I
+    hh .= JJ*hh
+    # JJ - Jc, hh - hc are new approximated factors
+    return max(update!(J[a], JJ .- Jc, ρ), update!(h[a], hh .- hc, ρ))
 end
 
+
+"""
+P(x) ∝ ∫dz δ(x-Pz-d) ∏ₐψₐ(xₐ)
+   x = Pz + d
+Q(x) ∝ ∏ₐϕₐ(xₐ)
+     ∝ exp(-½ xᵀAx + xᵀy)
+     ∝ ∫dz δ(x-Pz-d) Q(z)
+Q(z) ∝ exp(-½ (Pz+d)ᵀA(Pz+d) + (Pz-d)ᵀy)
+     ∝ exp(-½ zᵀPᵀAPz - zᵀPᵀAd -½dᵀAdᵀ + (zᵀPᵀ-dᵀ)y)
+     ∝ exp(-½ zᵀPᵀAPz + zᵀ(Pᵀ(y - Ad))
+Σz = (PᵀAP)⁻¹
+μz = (PᵀAP)⁻¹Pᵀ(y-Ad)
+Σx = P(PᵀAP)⁻¹Pᵀ
+μx = P*Σz + d
+= P((PᵀAP)⁻¹Pᵀ(y-Ad))+d
+= Σx(y-Ad)+d
+"""
 function EP(FG::FactorGraph,
-            P::AbstractMatrix{T} = I,
-            d::AbstractVector{T} = zeros(FG.N); # x = Fy+d
+            P::AbstractArray{T} = eye(FG.N),
+            d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
             maxiter::Int64 = 2000,
             callback = (x...)->nothing,
             ρ::Float64 = 0.9,
             epsconv::Float64 = 1e-6,
-            epsvar::Float64 = 1e-10,
-            epsvar2::Float64 = 0.0,
             inverter = inv,
-            state::EPState2 = EPState2(FG))
+            state::EPState2 = EPState2(FG)) where {T<:Real}
 
-    @extract state : Σ μ S h
+    @extract state : Σ μ J h
 
     N, M = FG.N, length(FG.factors)
     A, y = zeros(N,N), zeros(N)
-    Σ1 = zeros(size(P,2), size(P,2))
+    ε = 0.0
     for iter = 1:maxiter
-        A[:] .= 0.0
+        A .= 0.0
         y .= 0.0
         for a in 1:M
-            ψₐ, ∂a = FG.factors[a], FG.idx[a]
-            A[∂a,∂a] .+= S[a]; y[∂a] .+= h[a]
+            ∂a = FG.idx[a]
+            A[∂a, ∂a] .+= J[a]
+            y[∂a] .+= h[a]
         end
-        Σ1 .= inverter(P'*A*P + epsvar * I)
-      	Σ .= P'Σ1*P
-        μ .= d .+ P*Σ1*(y - P'A*d)
-        ε = maximum(update!(state, F.factors[a], a, ρ, epsvar2) for a=1:M)
+        Σ .= P*inverter(P'*A*P)*P'
+        μ .= Σ*(y - A*d) .+ d
+        ε = 0.0
+        for a=1:M
+            ε = max(ε, update!(state, FG.factors[a], a, ρ))
+        end
         callback(state,iter,ε) != nothing && break
-        ε < epsconv && return state, :converged, iter, ε
+        ε < epsconv && return (state, :converged, iter, ε)
     end
-    return state, :unconverged, iter, ε
+    return (state, :unconverged, maxiter, ε)
 end
 
 
-function expectation_propagation2(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
-                     x...) where {T <: Real, P <: Prior}
-    F = FactorGraph(cat(Factor[FactorPrior(p) for p in P0], Factor[FactorGauss(h.A, h.y) for h in H]))
-    EP(F, x...)
+function expectation_propagation2(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractArray{Float64} = zeros(0,length(P0))) where {T <: Real, P <: Prior}
+    N = length(P0)
+    factors = vcat(Factor[FactorPrior(p) for p in P0], Factor[FactorGauss(t.A, t.y) for t in H])
+    idx = vcat([[i] for i in 1:N], [collect(1:N) for h in H])
+    EP(FactorGraph(factors, idx, N), [I;F], callback=(state,iter,ε)->println("$iter $ε $(state.h)"))
 end
