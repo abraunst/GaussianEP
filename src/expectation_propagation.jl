@@ -18,8 +18,9 @@ struct EPState{T <: Real}
      FG  :: FactorGraph
 end
 
+eye(n) = Matrix(1.0I, n, n)
+
 function EPState(FG::FactorGraph)
-    eye(n) = Matrix(1.0I, n, n)
     d(a) = length(FG.idx[a])
     M,N = length(FG.idx), FG.N
     return EPState(eye(N), zeros(N),
@@ -112,14 +113,14 @@ Q(z) ∝ exp(-½ (Pz+d)ᵀA(Pz+d) + (Pz-d)ᵀy)
 = Σx(y-Ad)+d
 """
 function expectation_propagation(FG::FactorGraph,
-            P::AbstractArray{T} = eye(FG.N),
-            d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
-            maxiter::Int64 = 2000,
-            callback = (x...)->nothing,
-            ρ::Float64 = 0.9,
-            epsconv::Float64 = 1e-6,
-            inverter = inv,
-            state::EPState = EPState(FG)) where {T<:Real}
+                                 P::AbstractArray{T} = Diagonal(ones(FG.N)),
+                                 d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
+                                 maxiter::Int64 = 2000,
+                                 callback = (x...)->nothing,
+                                 ρ::Float64 = 0.9,
+                                 epsconv::Float64 = 1e-6,
+                                 inverter = inv,
+                                 state::EPState = EPState(FG)) where {T<:Real}
 
     @extract state : Σ μ J h
     size(P,1) == FG.N || throw(ArgumentError("bad size of projector"))
