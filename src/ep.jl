@@ -21,9 +21,11 @@ struct EPState2{T <: Real}
 end
 
 function EPState2(FG::FactorGraph)
+    eye(n) = Matrix(1.0I, n, n)
     d(a) = length(FG.idx[a])
     M,N = length(FG.idx), FG.N
     return EPState2(eye(N), zeros(N),
+                    [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
                     [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
                     FG)
 end

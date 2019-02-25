@@ -1,70 +1,72 @@
 using Random, LinearAlgebra, ExtractMacro
 
-```@meta
-CurrentModule = GaussianEP
-```
 
-function update_err!(dst, i, val)
-    r=abs(val - dst[i])
-    dst[i] = val
+function update!(old, new, ρ=0.0)
+    r = norm(new - old, Inf);
+    old .*= ρ;
+    old .+= (1 - ρ) * new;
     return r
 end
 
-"""
-    Instantaneous state of an expectation propagation run.
-"""
-struct EPState{T<:AbstractFloat}
-    A::Matrix{T}
-    y::Vector{T}
-    Σ::Matrix{T}
-    v::Vector{T}
-    av::Vector{T}
-    va::Vector{T}
-    a::Vector{T}
-    μ::Vector{T}
-    b::Vector{T}
-    s::Vector{T}
-end
-EPState{T}(N, Nx = N) where {T <: AbstractFloat} = EPState{T}(Matrix{T}(undef,Nx,Nx), zeros(T,Nx), Matrix{T}(undef,Nx,Nx), zeros(T,Nx),zeros(T,N), zeros(T,N), zeros(T,N), zeros(T,N), ones(T,N), ones(T,N))
-
-"""
-Output of EP algorithm
-
-"""
-struct EPOut{T<:AbstractFloat}
-    av::Vector{T}
-    va::Vector{T}
-    μ::Vector{T}
-    s::Vector{T}
-    converged::Symbol
-    state::EPState{T}
-end
-function EPOut(s, converged::Symbol) where {T <: AbstractFloat}
-    converged ∈ (:converged,:unconverged) || error("$converged is not a valid symbol")
-    return EPOut(s.av,s.va, s.μ,s.s,converged,s)
+struct EPState{T <: Real}
+     Σ   :: Matrix{T}
+     μ   :: Vector{T}
+     J   :: Vector{Matrix{T}}
+     h   :: Vector{Vector{T}}
+     Jc  :: Vector{Matrix{T}}
+     hc  :: Vector{Vector{T}}
+     FG  :: FactorGraph
 end
 
+function EPState(FG::FactorGraph)
+    eye(n) = Matrix(1.0I, n, n)
+    d(a) = length(FG.idx[a])
+    M,N = length(FG.idx), FG.N
+    return EPState(eye(N), zeros(N),
+                    [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
+                    [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
+                    FG)
+end
+
+function update!(state::EPState, ψ::Factor, a::Int, ρ::Real)
+    @extract state : Σ μ J h FG
+    ∂a = FG.idx[a]
+    # J, h are cavity coeffs
+    Jc = Σ[∂a, ∂a]\I .- J[a]
+    hc = Σ[∂a, ∂a]\μ[∂a] .- h[a]
+    # JJ, hh are moments
+    hh, JJ = moments(ψ, hc, Jc)
+    # JJ, hh are now total exponents
+    JJ .= JJ\I
+    hh .= JJ*hh
+    # JJ - Jc, hh - hc are new approximated factors
+    return max(update!(J[a], JJ .- Jc, ρ), update!(h[a], hh .- hc, ρ))
+end
+
 """
-    expectation_propagation(H::Vector{Term{T}}, P0::Vector{Prior}, F::AbstractMatrix{T} = zeros(0,length(P0)), d::Vector{T} = zeros(size(F,1));
+    expectation_propagation(FG::FactorGraph, P::AbstractMatrix{T} = Diagonal(FG.N), d::Vector{T} = zeros(FG.N);
         maxiter::Int = 2000,
         callback = (x...)->nothing,
-        # state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
         damp::T = 0.9,
         epsconv::T = 1e-6,
         maxvar::T = 1e50,
         minvar::T = 1e-50,
+        state::EPState{T} = EPState{T}(FG),
         inverter::Function = inv) where {T <: Real, P <: Prior}
 
 
 EP for approximate inference of
 
-``P(\\bf{x})=\\frac1Z exp(-\\frac12\\bf{x}' A \\bf{x} + \\bf{x'} \\bf{y}))×\\prod_i p_{i}(x_i)``
+``P(\\bf{x})=\\frac1Z \\prod_a ψ_{a}(x_a)``
 
 Arguments:
 
 * `A::Array{Term{T}}`: Gaussian Term (involving only x)
-* `P0::Array{Prior}`: Prior terms (involving x and y)
-* `F::AbstractMatrix{T}`: If included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\\bf{d}-\\bf{y})`` is added.
+
+Optional Arguments:
+
+* `P::AbstractMatrix{Prior}`: Projector
+* `d::AbstractVector{T}`: Contant shift
 
 Optional named arguments:
 
@@ -80,82 +82,68 @@ Optional named arguments:
 # Example
 
 ```jldoctest
-julia> t=Term(zeros(2,2),zeros(2),1.0)
-Term{Float64}([0.0 0.0; 0.0 0.0], [0.0, 0.0], 0.0, 1.0, 0.0, 0)
-
-julia> P=[IntervalPrior(i...) for i in [(0,1),(0,1),(-2,2)]]
+julia> FG=FactorGraph([FactorPrior(IntervalPrior(a,b)) for (a,b) in [(0,1),(0,1),(-2,2)]], [[i] for i=1:3], 3)
 3-element Array{IntervalPrior{Int64},1}:
  IntervalPrior{Int64}(0, 1)
  IntervalPrior{Int64}(0, 1)
  IntervalPrior{Int64}(-2, 2)
 
-julia> F=[1.0 -1.0];
+julia> P=[I; [1.0 -1.0]]
 
-julia> res = expectation_propagation([t], P, F)
+julia> res = expectation_propagation_legacy(FG)
 GaussianEP.EPOut{Float64}([0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.489862, 0.489862, 3.66599e-15], [334.018, 334.018, 0.204341], :converged, EPState{Float64}([9.79055 -0.00299477; -0.00299477 9.79055], [0.0, 0.0], [0.102139 3.12427e-5; 3.12427e-5 0.102139], [0.489862, 0.489862], [0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.490876, 0.490876, -1.86785e-17], [0.489862, 0.489862, 3.66599e-15], [0.100288, 0.100288, 403.599], [334.018, 334.018, 0.204341]))
 ```
+
+Note on subspace restriction
+
+P(x) ∝ ∫dz δ(x-Pz-d) ∏ₐψₐ(xₐ)
+   x = Pz + d
+Q(x) ∝ ∏ₐϕₐ(xₐ)
+     ∝ exp(-½ xᵀAx + xᵀy)
+     ∝ ∫dz δ(x-Pz-d) Q(z)
+Q(z) ∝ exp(-½ (Pz+d)ᵀA(Pz+d) + (Pz-d)ᵀy)
+     ∝ exp(-½ zᵀPᵀAPz - zᵀPᵀAd -½dᵀAdᵀ + (zᵀPᵀ-dᵀ)y)
+     ∝ exp(-½ zᵀPᵀAPz + zᵀ(Pᵀ(y - Ad))
+Σz = (PᵀAP)⁻¹
+μz = (PᵀAP)⁻¹Pᵀ(y-Ad)
+Σx = P(PᵀAP)⁻¹Pᵀ
+μx = P*Σz + d
+= P((PᵀAP)⁻¹Pᵀ(y-Ad))+d
+= Σx(y-Ad)+d
 """
-function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
-                     maxiter::Int = 2000,
-                     callback = (x...)->nothing,
-                     state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
-                     damp::T = 0.9,
-                     epsconv::T = 1e-6,
-                     maxvar::T = 1e50,
-                     minvar::T = 1e-50,
-                     inverter::Function = inv) where {T <: Real, P <: Prior}
-    @extract state A y Σ v av va a μ b s
-    Ny,Nx = size(F)
-    N = Nx + Ny
-    @assert size(P0,1) == N
-    Fp = copy(F')
+function expectation_propagation(FG::FactorGraph,
+            P::AbstractArray{T} = eye(FG.N),
+            d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
+            maxiter::Int64 = 2000,
+            callback = (x...)->nothing,
+            ρ::Float64 = 0.9,
+            epsconv::Float64 = 1e-6,
+            inverter = inv,
+            state::EPState = EPState(FG)) where {T<:Real}
+
+    @extract state : Σ μ J h
+    size(P,1) == FG.N || throw(ArgumentError("bad size of projector"))
+
+    N, M = FG.N, length(FG.factors)
+    A, y = zeros(N,N), zeros(N)
+    ε = 0.0
     for iter = 1:maxiter
-        sum!(A,y,H)
-        Δμ, Δs, Δav, Δva = 0.0, 0.0, 0.0, 0.0
-        A .+= Diagonal(1 ./ b[1:Nx]) .+ Fp * Diagonal(1 ./ b[Nx+1:end]) * F
-        Σ .= inverter(A)
-        v .= Σ * (y .+ a[1:Nx] ./ b[1:Nx] .+ Fp * ((a[Nx+1:end]-d) ./ b[Nx+1:end]))
-        for i in 1:N
-            if i <= Nx
-                ss = clamp(Σ[i,i], minvar, maxvar)
-                vv = v[i]
-            else
-                x = Fp[:, i-Nx]
-                ss = clamp(dot(x, Σ*x), minvar, maxvar)
-                vv = dot(x, v) + d[i-Nx]
-            end
-
-            if ss < b[i]
-                Δs = max(Δs, update_err!(s, i, clamp(1/(1/ss - 1/b[i]), minvar, maxvar)))
-                Δμ = max(Δμ, update_err!(μ, i, s[i] * (vv/ss - a[i]/b[i])))
-            else
-                ss == b[i] && @warn "infinite var, ss = $ss"
-                Δs = max(Δs, update_err!(s, i, maxvar))
-                Δμ = max(Δμ, update_err!(μ, i, 0))
-            end
-            tav, tva = moments(P0[i], μ[i], sqrt(s[i]));
-            Δav = max(Δav, update_err!(av, i, tav))
-            Δva = max(Δva, update_err!(va, i, tva))
-            (isnan(av[i]) || isnan(va[i])) && @warn "avnew = $(av[i]) varnew = $(va[i])"
-
-            new_b = clamp(1/(1/va[i] - 1/s[i]), minvar, maxvar)
-            new_a = av[i] + new_b * (av[i] - μ[i])/s[i]
-            a[i] = damp * a[i] + (1 - damp) * new_a
-            b[i] = damp * b[i] + (1 - damp) * new_b
+        A .= 0.0
+        y .= 0.0
+        for a in 1:M
+            ∂a = FG.idx[a]
+            A[∂a, ∂a] .+= J[a]
+            y[∂a] .+= h[a]
         end
-
-        # learn prior's params
-        for i in randperm(N)
-            gradient(P0[i], μ[i], sqrt(s[i]));
+        Σ .= P*inverter(P'*A*P)*P'
+        μ .= Σ*(y - A*d) .+ d
+        ε = 0.0
+        for a=1:M
+            ε = max(ε, update!(state, FG.factors[a], a, ρ))
         end
-        # learn β params
-        for i in 1:length(H)
-            updateβ(H[i], av[1:Nx])
-        end
-        callback(av,Δav,epsconv,maxiter,H,P0)
-        if Δav < epsconv
-            return EPOut(state, :converged)
-        end
+        callback(state,iter,ε) != nothing && break
+        ε < epsconv && return (state, :converged, iter, ε)
     end
-    return EPOut(state, :unconverged)
+    return (state, :unconverged, maxiter, ε)
 end
+
