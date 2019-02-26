@@ -84,7 +84,7 @@ Spike-and-slab prior
 
 Parameters: ρ,λ
 
-`` p_0(x) ∝ (1-ρ) δ(x) + ρ \\mathcal{N}(x;0,λ^{-1}) ``
+`` p_0(x) = (1-ρ) δ(x) + ρ \\mathcal{N}(x;0,λ^{-1}) ``
 """
 mutable struct SpikeSlabPrior{T<:Real} <: Prior
     ρ::T
@@ -109,12 +109,8 @@ function moments(p0::SpikeSlabPrior,h,J)
     va = (sd + (μ / d)^2 ) / f - av^2;
     #p0 = (1 - p0.params.ρ) * exp(-n) / (Z + (1-p0.params.ρ).*exp(-n));
     =#
-
-    if J <= 0
-        return 0, (1-ρ)*p0.σ^2 ### CHECK
-    end
     σ = 1/sqrt(J)
-    μ = σ*h
+    μ = h/J
     ℓ0 = p0.λ * σ^2
     ℓ = 1 + ℓ0;
     z = ℓ * (1 + (1/p0.ρ-1) * exp(-0.5*(μ/σ)^2/ℓ) * sqrt(ℓ/ℓ0))

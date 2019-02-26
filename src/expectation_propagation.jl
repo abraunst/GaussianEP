@@ -135,7 +135,7 @@ function expectation_propagation(FG::FactorGraph,
             A[∂a, ∂a] .+= J[a]
             y[∂a] .+= h[a]
         end
-        Σ .= P*inverter(P'*A*P+1e-10I)*P'
+        Σ .= P*inverter(P'*A*P)*P'
         μ .= Σ*(y - A*d) .+ d
         ε = 0.0
         for a=1:M
