@@ -17,9 +17,9 @@ abstract type Prior end
 
     `` p(x) ∝ p_0(x) \\mathcal{N}(x;μ,σ) ``
 """
-function moments(p0::T, μ, σ) where T <: Prior
+function moments(p0::T, h, J) where T <: Prior
     error("undefined moment calculation, assuming uniform prior")
-    return μ,σ^2
+    return h,J
 end
 
 """
@@ -28,7 +28,7 @@ end
 
     update parameters with a single learning gradient step (learning rate is stored in p0)
 """
-function gradient(p0::T, μ, σ) where T <: Prior
+function gradient(p0::T, h, J) where T <: Prior
     #by default, do nothing
     return
 end
@@ -45,13 +45,18 @@ struct IntervalPrior{T<:Real} <: Prior
     u::T
 end
 
-function moments(p0::IntervalPrior,μ,σ)
+function moments(p0::IntervalPrior,h,J)
+    if J <= 0
+        return 0.5 * (xu + xl), (xu + xl)^2/12
+    end
+    σ = 1/sqrt(J)
+    μ = σ*h
     xl = (p0.l - μ)/σ
     xu = (p0.u - μ)/σ
     minval = min(abs(xl), abs(xu))
 
     if xu - xl < 1e-10
-        return 0.5 * (xu + xl), -1
+        return 0.5 * (xu + xl), (xu + xl)^2/12
     end
 
     if minval <= 6.0 || xl * xu <= 0
@@ -92,7 +97,7 @@ end
 """
 ``p = \\frac1{(ℓ+1)((1/ρ-1) e^{-\\frac12 (μ/σ)^2 (2-\\frac1{1+ℓ})}\\sqrt{1+\\frac1{ℓ}}+1)}``
 """
-function moments(p0::SpikeSlabPrior,μ,σ)
+function moments(p0::SpikeSlabPrior,h,J)
 #=
     s2 = σ^2
     d = 1 + p0.λ * s2;
@@ -104,6 +109,12 @@ function moments(p0::SpikeSlabPrior,μ,σ)
     va = (sd + (μ / d)^2 ) / f - av^2;
     #p0 = (1 - p0.params.ρ) * exp(-n) / (Z + (1-p0.params.ρ).*exp(-n));
     =#
+
+    if J <= 0
+        return 0, (1-ρ)*p0.σ^2 ### CHECK
+    end
+    σ = 1/sqrt(J)
+    μ = σ*h
     ℓ0 = p0.λ * σ^2
     ℓ = 1 + ℓ0;
     z = ℓ * (1 + (1/p0.ρ-1) * exp(-0.5*(μ/σ)^2/ℓ) * sqrt(ℓ/ℓ0))
@@ -146,16 +157,15 @@ struct BinaryPrior{T<:Real} <: Prior
 end
 
 
-function moments(p0::BinaryPrior, μ, σ)
-    arg = -(σ^2 / 2) * (-p0.x0^2 - 2*(p0.x1 -p0.x0) * μ + p0.x1^2);
-    earg = exp(arg)
-    Z = p0.ρ / earg + (1-p0.ρ);
-    av = p0.ρ * p0.x0 / earg + (1-p0.ρ) * p0.x1;
-    mom2 = p0.ρ * (p0.x0^2) / earg + (1-p0.ρ) * (p0.x1^2);
+function moments(p0::BinaryPrior, h, J)
+    w = exp((-1/2*J*(p0.x0+p0.x1)+h)*(p0.x0-p0.x1))
+    Z = p0.ρ *w + (1-p0.ρ);
+    av = p0.ρ * p0.x0 * w + (1-p0.ρ) * p0.x1;
+    mom2 = p0.ρ * (p0.x0^2) * w + (1-p0.ρ) * (p0.x1^2);
     if (isnan(Z) || isinf(Z))
-        Z = p0.ρ + (1-p0.ρ) * earg;
-        av = p0.ρ * p0.x0 + (1-p0.ρ) * p0.x1 * earg;
-        mom2 = p0.ρ * (p0.x0^2) + (1-p0.ρ) * p0.x1 * earg;
+        Z = p0.ρ + (1-p0.ρ) / w;
+        av = p0.ρ * p0.x0 + (1-p0.ρ) * p0.x1 / w;
+        mom2 = p0.ρ * (p0.x0^2) + (1-p0.ρ) * p0.x1 / w;
     end
     av /= Z;
     mom2 /= Z;
@@ -163,17 +173,6 @@ function moments(p0::BinaryPrior, μ, σ)
     return av,va
 end
 
-
-struct GaussianPrior{T<:Real} <: Prior
-    μ::T
-    β::T
-    δβ::T
-end
-
-function moments(p0::GaussianPrior, μ, σ)
-    s = 1/(1/σ^2 + p0.β)
-    return s*(μ/σ^2 + p0.μ * p0.β), s
-end
 
 """
 This is a fake Prior that can be used to fix experimental moments
@@ -184,7 +183,7 @@ struct PosteriorPrior{T<:Real} <: Prior
     v::T
 end
 
-function moments(p0::PosteriorPrior, μ, σ)
+function moments(p0::PosteriorPrior, h, J)
     return p0.μ,p0.v
 end
 
@@ -206,8 +205,8 @@ struct QuadraturePrior{T<:Real} <: Prior
     end
 end
 
-function moments(p0::QuadraturePrior, μ, σ)
-    v = map(x->exp(-(x-μ)^2/2σ^2),p0.X)
+function moments(p0::QuadraturePrior, h, J)
+    v = map(x->exp(-J/2*x^2+h*x),p0.X)
     z0 = v ⋅ p0.W0
     av = (v ⋅ p0.W1)/z0
     va = (v ⋅ p0.W2)/z0 - av^2
@@ -237,10 +236,9 @@ mutable struct AutoPrior{T<:Real} <: Prior
     end
 end
 
-function moments(p0::AutoPrior, μ, σ)
+function moments(p0::AutoPrior, h, J)
     do_update!(p0)
-    s22 = 2σ^2
-    v = p0.FXW .* map(x->exp(-(x-μ)^2 / s22), p0.X)
+    v = p0.FXW .* map(x->exp(-J/2 * x^2 + h*x), p0.X)
     v .*= 1/sum(v)
     av = v ⋅ p0.X
     va = (v ⋅ p0.X2) - av^2
@@ -282,10 +280,11 @@ A θ(x) prior
 struct ThetaPrior <: Prior end
 
 
-function moments(::ThetaPrior,μ,σ)
-    α=μ/σ
-    av=μ+pdf_cf(α)*σ
-    var=σ^2*(1-α*pdf_cf(α)-pdf_cf(α)^2)
+function moments(::ThetaPrior,h,J)
+    μ = h/J
+    α = h/sqrt(J)
+    av = μ+pdf_cf(α)/sqrt(J)
+    var = 1/J*(1-α*pdf_cf(α)-pdf_cf(α)^2)
     return av,var
 end
 
