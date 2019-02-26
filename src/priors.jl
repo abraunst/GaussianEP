@@ -9,9 +9,9 @@ Abstract Univariate Prior type
 abstract type Prior end
 
 """
-    moments(p0::T, μ, σ) where T <:Prior -> (mean, variance)
+    moments(p0::T, h, J) where T <:Prior -> (mean, variance)
 
-    input: ``p_0, μ, σ``
+    input: ``p_0, h, J``
 
     output: mean and variance of
 
@@ -24,7 +24,7 @@ end
 
 """
 
-    gradient(p0::T, μ, σ) -> nothing
+    gradient(p0::T, h, J) -> nothing
 
     update parameters with a single learning gradient step (learning rate is stored in p0)
 """
@@ -120,8 +120,9 @@ function moments(p0::SpikeSlabPrior,h,J)
 end
 
 
-function gradient(p0::SpikeSlabPrior, μ, σ)
-    s = σ^2
+function gradient(p0::SpikeSlabPrior, h, J)
+    s = 1/J
+    μ = h/J
     d = 1 + p0.λ * s;
     q = sqrt(p0.λ * s / d);
     f = exp(-μ^2 / (2s*d));
@@ -250,8 +251,9 @@ function do_update!(p0::AutoPrior)
     copy!(p0.oldP, p0.P)
 end
 
-function gradient(p0::AutoPrior, μ, σ)
-    s22 = 2σ^2
+function gradient(p0::AutoPrior, h, J)
+    s22 = 2/J
+    μ = h/J
     v = map(x->exp(-(x-μ)^2 / s22), p0.X)
     z = sum(v)
     v ./= z
