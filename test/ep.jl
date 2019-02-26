@@ -3,7 +3,7 @@ using GaussianEP, Test, LinearAlgebra
 
 function simple_ep_test()
     N = 3
-    factors = [FactorPrior(IntervalPrior(a,b)) for (a,b) in [(0,1),(0,1),(-2,2)]]
+    factors = [FactorInterval(a,b) for (a,b) in [(0,1),(0,1),(-2,2)]]
     idx = [[i] for i in 1:N]
     FG = FactorGraph(factors, idx, N)
     F=[1.0 -1.0]

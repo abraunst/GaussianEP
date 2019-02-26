@@ -83,15 +83,15 @@ Optional named arguments:
 # Example
 
 ```jldoctest
-julia> FG=FactorGraph([FactorPrior(IntervalPrior(a,b)) for (a,b) in [(0,1),(0,1),(-2,2)]], [[i] for i=1:3], 3)
-FactorGraph(Factor[FactorPrior{IntervalPrior{Int64}}(IntervalPrior{Int64}(0, 1)), FactorPrior{IntervalPrior{Int64}}(IntervalPrior{Int64}(0, 1)), FactorPrior{IntervalPrior{Int64}}(IntervalPrior{Int64}(-2, 2))], Array{Int64,1}[[1], [2], [3]], 3)
+julia> FG=FactorGraph([FactorInterval(a,b) for (a,b) in [(0,1),(0,1),(-2,2)]], [[i] for i=1:3], 3)
+FactorGraph(Factor[FactorInterval{Int64}(0, 1), FactorInterval{Int64}(0, 1), FactorInterval{Int64}(-2, 2)], Array{Int64,1}[[1], [2], [3]], 3)
 
 julia> using LinearAlgebra
 
 julia> P=[I; [1.0 -1.0]];
 
 julia> res = expectation_propagation(FG, P)
-(EPState{Float64}([0.0833329 1.00114e-6 0.0833319; 1.00114e-6 0.0833329 -0.0833319; 0.0833319 -0.0833319 0.166664], [0.499994, 0.499994, 1.39058e-13], Array{Float64,2}[[11.9999], [11.9999], [0.00014416]], Array{Float64,1}[[5.99988], [5.99988], [-1.14443e-13]], Array{Float64,2}[[1.0], [1.0], [1.0]], Array{Float64,1}[[0.0], [0.0], [0.0]], FactorGraph(Factor[FactorPrior{IntervalPrior{Int64}}(IntervalPrior{Int64}(0, 1)), FactorPrior{IntervalPrior{Int64}}(IntervalPrior{Int64}(0, 1)), FactorPrior{IntervalPrior{Int64}}(IntervalPrior{Int64}(-2, 2))], Array{Int64,1}[[1], [2], [3]], 3)), :converged, 162, 9.829257408000558e-7)
+(EPState{Float64}([0.0833329 1.00114e-6 0.0833319; 1.00114e-6 0.0833329 -0.0833319; 0.0833319 -0.0833319 0.166664], [0.499994, 0.499994, 1.39058e-13], Array{Float64,2}[[11.9999], [11.9999], [0.00014416]], Array{Float64,1}[[5.99988], [5.99988], [-1.14443e-13]], Array{Float64,2}[[1.0], [1.0], [1.0]], Array{Float64,1}[[0.0], [0.0], [0.0]], FactorGraph(Factor[FactorInterval{Int64}(0, 1), FactorInterval{Int64}(0, 1), FactorInterval{Int64}(-2, 2)], Array{Int64,1}[[1], [2], [3]], 3)), :converged, 162, 9.829257408000558e-7)
 ```
 
 Note on subspace restriction

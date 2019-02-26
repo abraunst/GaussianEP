@@ -1,14 +1,15 @@
 module GaussianEP
 
-export Factor, FactorGraph, FactorPrior, FactorGauss, EPState, expectation_propagation
-export Prior, IntervalPrior, SpikeSlabPrior, BinaryPrior, GaussianPrior, PosteriorPrior, QuadraturePrior, AutoPrior, ThetaPrior
+export FactorGraph, FactorPrior, FactorGauss, EPState, expectation_propagation
 
 using ExtractMacro, SpecialFunctions, LinearAlgebra
 
 include("ProgressReporter.jl")
-include("priors.jl")
 include("Factor.jl")
+include("FactorGraph.jl")
 include("expectation_propagation.jl")
-include("FactorGauss.jl")
+include("univariate.jl")
+include("multivariate.jl")
+
 
 end # end module
