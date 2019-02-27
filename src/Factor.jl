@@ -1,13 +1,7 @@
 export Factor
 
 
-abstract type Factor
-end
-
-function moments(F::Factor, y::Vector{Float64}, S::Vector{Float64})
-    throw(MethodError("Undefined moments"))
-end
-
+abstract type Factor end
 
 
 """
@@ -21,7 +15,7 @@ end
 """
 function moments(p0::T, h, J) where T <: Factor
     error("undefined moment calculation, assuming uniform prior")
-    return h,J
+    return J\h,J\I
 end
 
 """

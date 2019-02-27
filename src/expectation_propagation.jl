@@ -15,6 +15,8 @@ struct EPState{T <: Real}
      h   :: Vector{Vector{T}}
      Jc  :: Vector{Matrix{T}}
      hc  :: Vector{Vector{T}}
+     Jt  :: Vector{Matrix{T}}
+     ht  :: Vector{Vector{T}}
      FG  :: FactorGraph
 end
 
@@ -26,17 +28,19 @@ function EPState(FG::FactorGraph, ::Type{T}=Float64) where {T <: Real}
     return EPState(eye(T, N), zeros(T, N),
                     [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
                     [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
+                    [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
                     FG)
 end
 
 function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T) where {T <: Real}
-    @extract state : Σ μ J h FG
+    @extract state : Σ μ J h Jt ht FG
     ∂a = FG.idx[a]
     # J, h are cavity coeffs
     Jc = Σ[∂a, ∂a]\I .- J[a]
     hc = Σ[∂a, ∂a]\μ[∂a] .- h[a]
     # JJ, hh are moments
-    hh, JJ = moments(ψ, hc, Jc)
+    hh, JJ = ht[a], Jt[a]
+    moments!(hh, JJ, ψ, hc, Jc)
     # JJ, hh are now total exponents
     JJ .= JJ\I
     hh .= JJ*hh

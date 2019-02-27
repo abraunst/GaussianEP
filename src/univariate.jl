@@ -1,13 +1,13 @@
-
 using FastGaussQuadrature, ForwardDiff
 
 export FactorInterval, FactorSpikeSlab, FactorBinary, FactorGaussian, FactorPosterior, FactorQuadrature, FactorAuto, FactorTheta
 
 
-ret(av,va) = (fill(av,1), fill(va,1,1))
+abstract type FactorUnivariate <: Factor end
 
-Φ(x) = 0.5*(1+erf(x/sqrt(2.0)))
-ϕ(x) = exp(-x.^2/2)/sqrt(2π)
+ret((av,va)) = (fill(av,1), fill(va,1,1))
+
+moments!(av::Vector, va::Matrix, ψ::FactorUnivariate, h, J) = (p = moments(ψ, h, J); av[]=p[1]; va[]=p[2]; return)
 
 
 """
@@ -17,10 +17,14 @@ Parameters: l,u
 
 `` p_0(x) = \\frac{1}{u-l}\\mathbb{I}[l\\leq x\\leq u] ``
 """
-struct FactorInterval{T<:Real} <: Factor
+struct FactorInterval{T<:Real} <: FactorUnivariate
     l::T
     u::T
 end
+
+Φ(x) = 0.5*(1+erf(x/sqrt(2.0)))
+ϕ(x) = exp(-x.^2/2)/sqrt(2π)
+
 
 function moments(p0::FactorInterval,h,J)
     J, h = J[], h[]
@@ -53,7 +57,7 @@ function moments(p0::FactorInterval,h,J)
         end
     end
     va = mom2 - av^2
-    return ret(μ + av * σ, σ^2 * (1 + va))
+    return μ + av * σ, σ^2 * (1 + va)
 end
 
 
@@ -64,7 +68,7 @@ Parameters: ρ,λ
 
 `` p_0(x) = (1-ρ) δ(x) + ρ \\mathcal{N}(x;0,λ^{-1}) ``
 """
-mutable struct FactorSpikeSlab{T<:Real} <: Factor
+mutable struct FactorSpikeSlab{T<:Real} <: FactorUnivariate
     ρ::T
     λ::T
     δρ::T
@@ -93,9 +97,7 @@ function moments(p0::FactorSpikeSlab,h,J)
     ℓ0 = p0.λ * σ^2
     ℓ = 1 + ℓ0;
     z = ℓ * (1 + (1/p0.ρ-1) * exp(-0.5*(μ/σ)^2/ℓ) * sqrt(ℓ/ℓ0))
-    av = μ / z;
-    va = (σ^2 + μ^2*(1/ℓ - 1/z)) / z;
-    return ret(av, va)
+    return μ / z, (σ^2 + μ^2*(1/ℓ - 1/z)) / z;
 end
 
 
@@ -118,6 +120,7 @@ function gradient(p0::FactorSpikeSlab, h, J)
         p0.λ += p0.δλ * num/den;
         p0.λ = max(p0.λ, 0)
     end
+    nothing
 end
 
 
@@ -127,7 +130,7 @@ Binary Factor
 p_0(x) ∝ ρ δ(x-x_0) + (1-ρ) δ(x-x_1)
 
 """
-struct FactorBinary{T<:Real} <: Factor
+struct FactorBinary{T<:Real} <: FactorUnivariate
     x0::T
     x1::T
     ρ::T
@@ -148,7 +151,7 @@ function moments(p0::FactorBinary, h, J)
     av /= Z;
     mom2 /= Z;
     va = mom2 - av.^2;
-    return ret(av, va)
+    return av, va
 end
 
 
@@ -156,17 +159,17 @@ end
 This is a fake Factor that can be used to fix experimental moments
 Parameters: μ, v (variance, not std)
 """
-struct FactorPosterior{T<:Real} <: Factor
+struct FactorPosterior{T<:Real} <: FactorUnivariate
     μ::T
     v::T
 end
 
 function moments(p0::FactorPosterior, h, J)
-    return ret(p0.μ,p0.v)
+    return p0.μ,p0.v
 end
 
 
-struct FactorQuadrature{T<:Real} <: Factor
+struct FactorQuadrature{T<:Real} <: FactorUnivariate
     f
     X::Vector{T}
     W0::Vector{T}
@@ -189,10 +192,10 @@ function moments(p0::FactorQuadrature, h, J)
     z0 = v ⋅ p0.W0
     av = (v ⋅ p0.W1)/z0
     va = (v ⋅ p0.W2)/z0 - av^2
-    ret(av,va)
+    return av,va
 end
 
-mutable struct FactorAuto{T<:Real} <: Factor
+mutable struct FactorAuto{T<:Real} <: FactorUnivariate
     #real arguments
     f
     P::Vector{T}
@@ -222,7 +225,7 @@ function moments(p0::FactorAuto, h, J)
     v .*= 1/sum(v)
     av = v ⋅ p0.X
     va = (v ⋅ p0.X2) - av^2
-    ret(av,va)
+    return av,va
 end
 
 function do_update!(p0::FactorAuto)
@@ -259,7 +262,7 @@ end
 """
 A θ(x) prior
 """
-struct FactorTheta <: Factor end
+struct FactorTheta <: FactorUnivariate end
 
 
 function moments(::FactorTheta,h,J)
@@ -268,6 +271,6 @@ function moments(::FactorTheta,h,J)
     α = h/sqrt(J)
     av = μ+pdf_cf(α)/sqrt(J)
     va = 1/J*(1-α*pdf_cf(α)-pdf_cf(α)^2)
-    ret(av,va)
+    return av,va
 end
 
