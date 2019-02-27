@@ -1,8 +1,8 @@
 module GaussianEP
 
-export FactorGraph, FactorPrior, FactorGauss, EPState, expectation_propagation
-
 using ExtractMacro, SpecialFunctions, LinearAlgebra
+
+export FactorGraph, FactorGauss, EPState, expectation_propagation
 
 include("ProgressReporter.jl")
 include("Factor.jl")

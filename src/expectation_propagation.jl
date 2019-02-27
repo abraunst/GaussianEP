@@ -29,7 +29,7 @@ function EPState(FG::FactorGraph)
                     FG)
 end
 
-function update!(state::EPState, ψ::Factor, a::Int, ρ::Real)
+function update!(state::EPState, ψ::Factor, a::Integer, ρ::Real)
     @extract state : Σ μ J h FG
     ∂a = FG.idx[a]
     # J, h are cavity coeffs
@@ -114,7 +114,7 @@ Q(z) ∝ exp(-½ (Pz+d)ᵀA(Pz+d) + (Pz-d)ᵀy)
 function expectation_propagation(FG::FactorGraph,
                                  P::AbstractArray{T} = Diagonal(ones(FG.N)),
                                  d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
-                                 maxiter::Int64 = 2000,
+                                 maxiter::Integer = 2000,
                                  callback = (x...)->nothing,
                                  ρ::Float64 = 0.9,
                                  epsconv::Float64 = 1e-6,
