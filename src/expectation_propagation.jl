@@ -1,10 +1,10 @@
 using Random, LinearAlgebra, ExtractMacro
 
 
-function update!(old, new, ρ=0.0)
-    r = norm(new - old, Inf);
-    old .*= ρ;
-    old .+= (1 - ρ) * new;
+function update!(old::Array{T}, new::Array{T}, ρ::T = zero(T))::T where {T<:Real}
+    r = maximum(abs, new - old)
+    old .*= ρ
+    old .+= (1 - ρ) * new
     return r
 end
 
@@ -18,18 +18,18 @@ struct EPState{T <: Real}
      FG  :: FactorGraph
 end
 
-eye(n) = Matrix(1.0I, n, n)
+eye(::Type{T}, n::Integer) where T = Matrix(T(1)*I, n, n)
 
-function EPState(FG::FactorGraph)
+function EPState(FG::FactorGraph, ::Type{T}=Float64) where {T <: Real}
     d(a) = length(FG.idx[a])
     M,N = length(FG.idx), FG.N
-    return EPState(eye(N), zeros(N),
-                    [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
-                    [eye(d(a)) for a=1:M], [zeros(d(a)) for a=1:M],
+    return EPState(eye(T, N), zeros(T, N),
+                    [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
+                    [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
                     FG)
 end
 
-function update!(state::EPState, ψ::Factor, a::Integer, ρ::Real)
+function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T) where {T <: Real}
     @extract state : Σ μ J h FG
     ∂a = FG.idx[a]
     # J, h are cavity coeffs
@@ -116,10 +116,10 @@ function expectation_propagation(FG::FactorGraph,
                                  d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
                                  maxiter::Integer = 2000,
                                  callback = (x...)->nothing,
-                                 ρ::Float64 = 0.9,
-                                 epsconv::Float64 = 1e-6,
+                                 ρ::T = 0.9,
+                                 epsconv::T = 1e-6,
                                  inverter = inv,
-                                 state::EPState = EPState(FG)) where {T<:Real}
+                                 state::EPState{T} = EPState(FG, T)) where {T<:Real}
 
     @extract state : Σ μ J h
     size(P,1) == FG.N || throw(ArgumentError("bad size of projector"))
