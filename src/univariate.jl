@@ -29,7 +29,7 @@ end
 function moments(p0::FactorInterval,h,J)
     J, h = J[], h[]
     if J <= 0
-        return 0.5 * (xu + xl), (xu + xl)^2/12
+        return 0.5 * (p0.l + p0.u), (p0.u - p0.l)^2/12
     end
     σ = 1/sqrt(J)
     μ = σ*h
@@ -37,9 +37,9 @@ function moments(p0::FactorInterval,h,J)
     xu = (p0.u - μ)/σ
     minval = min(abs(xl), abs(xu))
 
-    if xu - xl < 1e-10
-        return 0.5 * (xu + xl), (xu + xl)^2/12
-    end
+    #=if xu - xl < 1e-10
+        return 0.5 * (xu + xl), (xu - xl)^2/12
+    end=#
 
     if minval <= 6.0 || xl * xu <= 0
         ϕu, Φu, ϕl, Φl  = ϕ(xu), Φ(xu), ϕ(xl), Φ(xl)

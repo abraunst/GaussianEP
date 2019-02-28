@@ -82,7 +82,7 @@ Optional named arguments:
 * `maxiter::Int = 2000`: maximum number of iterations
 * `callback = (x...)->nothing`: your own function to report progress, see [`ProgressReporter`](@ref)
 * `state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2])`: If supplied, all internal state is updated here
-* `damp::T = 0.9`: damping parameter
+* `damp::T = 0.0`: damping parameter
 * `epsconv::T = 1e-6`: convergence criterion
 * `maxvar::T = 1e50`: maximum variance
 * `minvar::T = 1e-50`: minimum variance
@@ -124,7 +124,7 @@ function expectation_propagation(FG::FactorGraph,
                                  d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
                                  maxiter::Integer = 2000,
                                  callback = (x...)->nothing,
-                                 ρ::T = 0.9,
+                                 damp::T = zero(T),
                                  epsconv::T = 1e-6,
                                  inverter = inv,
                                  state::EPState{T} = EPState(FG, T)) where {T<:Real}
@@ -147,7 +147,7 @@ function expectation_propagation(FG::FactorGraph,
         μ .= Σ*(y - A*d) .+ d
         ε = 0.0
         for a=1:M
-            ε = max(ε, update!(state, FG.factors[a], a, ρ))
+            ε = max(ε, update!(state, FG.factors[a], a, damp))
         end
         callback(state,iter,ε) != nothing && break
         ε < epsconv && return (state, :converged, iter, ε)
