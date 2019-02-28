@@ -48,7 +48,7 @@ function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T) where {T <: R
     # Jta - Jc, hta - hc are new approximated factors
     ε = max(update!(J[a], Jta .- Jca, ρ), update!(h[a], hta .- hca, ρ))
     # learn params
-    learn!(ψ, hcs, Jca)
+    learn!(ψ, hca, Jca)
     return ε
 end
 
