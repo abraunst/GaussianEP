@@ -33,19 +33,23 @@ function EPState(FG::FactorGraph, ::Type{T}=Float64) where {T <: Real}
 end
 
 function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T) where {T <: Real}
-    @extract state : Σ μ J h Jt ht FG
+    @extract state : Σ μ J h Jc hc Jt ht FG
     ∂a = FG.idx[a]
     # J, h are cavity coeffs
-    Jc = Σ[∂a, ∂a]\I .- J[a]
-    hc = Σ[∂a, ∂a]\μ[∂a] .- h[a]
-    # JJ, hh are moments
-    hh, JJ = ht[a], Jt[a]
-    moments!(hh, JJ, ψ, hc, Jc)
-    # JJ, hh are now total exponents
-    JJ .= JJ\I
-    hh .= JJ*hh
-    # JJ - Jc, hh - hc are new approximated factors
-    return max(update!(J[a], JJ .- Jc, ρ), update!(h[a], hh .- hc, ρ))
+    hca, Jca = hc[a], Jc[a]
+    Jca .= Σ[∂a, ∂a]\I .- J[a]
+    hca .= Σ[∂a, ∂a]\μ[∂a] .- h[a]
+    # Jta, hta are moments
+    hta, Jta = ht[a], Jt[a]
+    moments!(hta, Jta, ψ, hca, Jca)
+    # Jta, hta are now total exponents
+    Jta .= Jta\I
+    hta .= Jta*hta
+    # Jta - Jc, hta - hc are new approximated factors
+    ε = max(update!(J[a], Jta .- Jca, ρ), update!(h[a], hta .- hca, ρ))
+    # learn params
+    learn!(ψ, hcs, Jca)
+    return ε
 end
 
 """

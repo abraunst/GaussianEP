@@ -101,7 +101,7 @@ function moments(p0::FactorSpikeSlab,h,J)
 end
 
 
-function gradient(p0::FactorSpikeSlab, h, J)
+function learn!(p0::FactorSpikeSlab, h, J)
     J, h = J[], h[]
     s = 1/J
     μ = h/J
@@ -237,7 +237,7 @@ function do_update!(p0::FactorAuto)
     copy!(p0.oldP, p0.P)
 end
 
-function gradient(p0::FactorAuto, h, J)
+function learn!(p0::FactorAuto, h, J)
     J = J[]; h = h[]
     s22 = 2/J
     μ = h/J
