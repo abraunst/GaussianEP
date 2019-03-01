@@ -7,7 +7,7 @@ end
 
 FactorGauss(J, h, β = 1.0) = FactorGauss(J, h, β, 0.0)
 
-function update!(state::EPState, ψ::FactorGauss, a::Int, ρ::Real)
+function update!(state::EPState{T}, ψ::FactorGauss, a::Integer, ρ::T, epsvar::T) where {T<:Real}
     @extract state : J h Σ μ
     @assert size(J[a]) == size(ψ.J) && size(h[a]) == size(ψ.h)
     if ψ.δβ > 0

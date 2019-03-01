@@ -32,18 +32,18 @@ function EPState(FG::FactorGraph, ::Type{T}=Float64) where {T <: Real}
                     FG)
 end
 
-function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T) where {T <: Real}
+function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T, epsvar::T = zero(T)) where {T <: Real}
     @extract state : Σ μ J h Jc hc Jt ht FG
     ∂a = FG.idx[a]
     # J, h are cavity coeffs
     hca, Jca = hc[a], Jc[a]
-    Jca .= Σ[∂a, ∂a]\I .- J[a]
+    Jca .= (Σ[∂a, ∂a]+epsvar*I)\I .- J[a]
     hca .= Σ[∂a, ∂a]\μ[∂a] .- h[a]
     # Jta, hta are moments
     hta, Jta = ht[a], Jt[a]
     moments!(hta, Jta, ψ, hca, Jca)
     # Jta, hta are now total exponents
-    Jta .= Jta\I
+    Jta .= (Jta+epsvar*I)\I
     hta .= Jta*hta
     # Jta - Jc, hta - hc are new approximated factors
     ε = max(update!(J[a], Jta .- Jca, ρ), update!(h[a], hta .- hca, ρ))
@@ -91,14 +91,12 @@ Optional named arguments:
 # Example
 
 ```jldoctest
-julia> FG=FactorGraph([FactorInterval(a,b) for (a,b) in [(0,1),(0,1),(-2,2)]], [[i] for i=1:3], 3)
+julia> FG=FactorGraph([FactorInterval(a,b) for (a,b) in [(0,1),(0,1),(-2,2)]], [[i] for i=1:3], [1.0 -1.0 -1.0])
 FactorGraph(Factor[FactorInterval{Int64}(0, 1), FactorInterval{Int64}(0, 1), FactorInterval{Int64}(-2, 2)], Array{Int64,1}[[1], [2], [3]], 3)
 
 julia> using LinearAlgebra
 
-julia> P=[I; [1.0 -1.0]];
-
-julia> res = expectation_propagation(FG, P)
+julia> res = expectation_propagation(FG)
 (EPState{Float64}([0.0833329 1.00114e-6 0.0833319; 1.00114e-6 0.0833329 -0.0833319; 0.0833319 -0.0833319 0.166664], [0.499994, 0.499994, 1.39058e-13], Array{Float64,2}[[11.9999], [11.9999], [0.00014416]], Array{Float64,1}[[5.99988], [5.99988], [-1.14443e-13]], Array{Float64,2}[[1.0], [1.0], [1.0]], Array{Float64,1}[[0.0], [0.0], [0.0]], FactorGraph(Factor[FactorInterval{Int64}(0, 1), FactorInterval{Int64}(0, 1), FactorInterval{Int64}(-2, 2)], Array{Int64,1}[[1], [2], [3]], 3)), :converged, 162, 9.829257408000558e-7)
 ```
 
@@ -119,19 +117,16 @@ Q(z) ∝ exp(-½ (Pz+d)ᵀA(Pz+d) + (Pz-d)ᵀy)
 = P((PᵀAP)⁻¹Pᵀ(y-Ad))+d
 = Σx(y-Ad)+d
 """
-function expectation_propagation(FG::FactorGraph,
-                                 P::AbstractArray{T} = Diagonal(ones(FG.N)),
-                                 d::AbstractVector{T} = zeros(FG.N); # x = Pz+d
+function expectation_propagation(FG::FactorGraph{T,F};
                                  maxiter::Integer = 2000,
                                  callback = (x...)->nothing,
                                  damp::T = zero(T),
                                  epsconv::T = 1e-6,
                                  inverter = inv,
-                                 state::EPState{T} = EPState(FG, T)) where {T<:Real}
+                                 epsvar::T = zero(T),
+                                 state::EPState{T} = EPState(FG, T)) where {F<:Factor, T<:Real}
 
     @extract state : Σ μ J h
-    size(P,1) == FG.N || throw(ArgumentError("bad size of projector"))
-
     N, M = FG.N, length(FG.factors)
     A, y = zeros(N,N), zeros(N)
     ε = 0.0
@@ -143,11 +138,11 @@ function expectation_propagation(FG::FactorGraph,
             A[∂a, ∂a] .+= J[a]
             y[∂a] .+= h[a]
         end
-        Σ .= P*inverter(P'*A*P)*P'
-        μ .= Σ*(y - A*d) .+ d
+        Σ .= FG.P*inverter(FG.P'*A*FG.P)*FG.P'
+        μ .= Σ*(y - A*FG.d) .+ FG.d
         ε = 0.0
         for a=1:M
-            ε = max(ε, update!(state, FG.factors[a], a, damp))
+            ε = max(ε, update!(state, FG.factors[a], a, damp, epsvar))
         end
         callback(state,iter,ε) != nothing && break
         ε < epsconv && return (state, :converged, iter, ε)
