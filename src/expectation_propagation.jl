@@ -53,15 +53,15 @@ function update!(state::EPState{T}, ψ::Factor, a::Integer, ρ::T, epsvar::T = z
 end
 
 """
-    expectation_propagation(FG::FactorGraph, P::AbstractMatrix{T} = Diagonal(FG.N), d::Vector{T} = zeros(FG.N);
-        maxiter::Int = 2000,
-        callback = (x...)->nothing,
-        damp::T = 0.9,
-        epsconv::T = 1e-6,
-        maxvar::T = 1e50,
-        minvar::T = 1e-50,
-        state::EPState{T} = EPState{T}(FG),
-        inverter::Function = inv) where {T <: Real, P <: Prior}
+        expectation_propagation(FG::FactorGraph;
+                                maxiter::Int = 2000,
+                                callback = (state,iter,ε)->nothing,
+                                damp::T = 0.9,
+                                epsconv::T = 1e-6,
+                                maxvar::T = 1e50,
+                                minvar::T = 1e-50,
+                                state::EPState{T} = EPState{T}(FG),
+                                inverter::Function = inv) -> (state, converged, iter, ε)
 
 
 EP for approximate inference of
