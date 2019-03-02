@@ -8,7 +8,7 @@ function update!(old::Array{T}, new::Array{T}, ρ::T = zero(T))::T where {T<:Rea
     return r
 end
 
-struct EPState{T <: Real}
+struct EPState{T <: Real, F <: Factor}
      Σ   :: Matrix{T}
      μ   :: Vector{T}
      J   :: Vector{Matrix{T}}
@@ -17,15 +17,15 @@ struct EPState{T <: Real}
      hc  :: Vector{Vector{T}}
      Jt  :: Vector{Matrix{T}}
      ht  :: Vector{Vector{T}}
-     FG  :: FactorGraph
+     FG  :: FactorGraph{T,F}
 end
 
 eye(::Type{T}, n::Integer) where T = Matrix(T(1)*I, n, n)
 
-function EPState(FG::FactorGraph, ::Type{T}=Float64) where {T <: Real}
+function EPState(FG::FactorGraph{T,F}) where {T <: Real, F <: Factor}
     d(a) = length(FG.idx[a])
     M,N = length(FG.idx), FG.N
-    return EPState(eye(T, N), zeros(T, N),
+    return EPState{T,F}(eye(T, N), zeros(T, N),
                     [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
                     [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
                     [eye(T, d(a)) for a=1:M], [zeros(T, d(a)) for a=1:M],
@@ -124,7 +124,7 @@ function expectation_propagation(FG::FactorGraph{T,F};
                                  epsconv::T = 1e-6,
                                  inverter = inv,
                                  epsvar::T = zero(T),
-                                 state::EPState{T} = EPState(FG, T)) where {F<:Factor, T<:Real}
+                                 state::EPState{T} = EPState(FG)) where {F<:Factor, T<:Real}
 
     @extract state : Σ μ J h
     N, M = FG.N, length(FG.factors)
@@ -139,7 +139,7 @@ function expectation_propagation(FG::FactorGraph{T,F};
             y[∂a] .+= h[a]
         end
         Σ .= FG.P*inverter(FG.P'*A*FG.P)*FG.P'
-        μ .= Σ*(y - A*FG.d) .+ FG.d
+        μ .= Σ * (y .- A*FG.d) .+ FG.d
         ε = 0.0
         for a=1:M
             ε = max(ε, update!(state, FG.factors[a], a, damp, epsvar))
