@@ -13,7 +13,7 @@ function update!(state::EPState{T}, ψ::FactorGauss, a::Integer, ρ::T, epsvar::
     if ψ.δβ > 0
         ψ.β = ψ.δβ * size(J,1) / (0.5*μ'J*μ-h'μ) + (1-ψ.δβ) * ψ.β
     end
-    J[a][1] == ψ.J[1] && return 0.0
+    J[a][1] == ψ.J[1]*ψ.β && return 0.0
     J[a] .= ψ.J*ψ.β
     h[a] .= ψ.h*ψ.β
     return 1.0
