@@ -1,20 +1,18 @@
 module TestEP
-using GaussianEP, Test
+using GaussianEP, Test, LinearAlgebra
 
 function simple_ep_test()
-    t=Term(zeros(2,2),zeros(2),1.0)
-    P=[IntervalPrior(i...) for i in [(0,1),(0,1),(-2,2)]]
-    F=[1.0 -1.0]
-    av0 = [0.4999974709003177,0.4999974709003177,3.665273196564082e-15]
-    va0 = [0.08332501737195087, 0.08332501737195087, 0.2043006364495929]
-    μ0 = [0.4898618134668008,0.4898618134668008,3.665993043660408e-15]
-    s0 = [334.0179053087342,334.0179053087342,0.20434113796777062]
-    res = expectation_propagation([t], P, F)
-    @test sum(abs, res.av - av0) < 1e-9
-    @test sum(abs, res.va - va0) < 1e-9
-    @test sum(abs, res.μ - μ0) < 1e-9
-    @test sum(abs, res.s - s0) < 1e-9
-    # test precision to 1e-9 to comply with 32 bit
+    N = 3
+    factors = [FactorInterval(a,b) for (a,b) in [(0,1),(0,1),(-2,2)]]
+    idx = [[i] for i in 1:N]
+    S = [1.0 -1.0 -1.0]
+    FG = FactorGraph(factors, idx, S)
+    av0 = Float64[1/2, 1/2, 0]
+    va0 = Float64[1/12, 1/12, 1/6]
+    state,status,iter,ε = expectation_propagation(FG, epsconv=1e-8)
+    @test state.μ ≈ av0 atol=1e-5
+    @test diag(state.Σ) ≈ va0 atol=1e-5
+    @test status === :converged
 end
 
 

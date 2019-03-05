@@ -1,4 +1,4 @@
-Julia GaussianEP package Copyright (C) 2019 Alfredo Braunstein, Anna-Paola Muntoni, Andrea Pagnani and Mirko Pieropan (the "Authors"). All Rights Reserved.
+Julia GaussianEP package Copyright (C) 2019 Alfredo Braunstein, Giovanni Catania, Anna-Paola Muntoni, Andrea Pagnani and Mirko Pieropan (the "Authors"). All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the Licence, or (at your option) any later version.
 
