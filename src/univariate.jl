@@ -5,8 +5,6 @@ export FactorInterval, FactorSpikeSlab, FactorBinary, FactorGaussian, FactorPost
 
 abstract type FactorUnivariate <: Factor end
 
-ret((av,va)) = (fill(av,1), fill(va,1,1))
-
 moments!(av::Vector, va::Matrix, ψ::FactorUnivariate, h, J) = (p = moments(ψ, h, J); av[]=p[1]; va[]=p[2]; return)
 
 
@@ -81,23 +79,9 @@ end
 """
 function moments(p0::FactorSpikeSlab,h,J)
     J, h = J[], h[]
-#=
-    s2 = σ^2
-    d = 1 + p0.λ * s2;
-    sd = 1 / (1/s2 + p0.λ);
-    n = μ^2/(2*d*s2);
-    Z = sqrt(p0.λ * sd) * p0.ρ;
-    f = 1 + (1-p0.ρ) * exp(-n) / Z;
-    av = μ / (d * f);
-    va = (sd + (μ / d)^2 ) / f - av^2;
-    #p0 = (1 - p0.params.ρ) * exp(-n) / (Z + (1-p0.params.ρ).*exp(-n));
-    =#
-    σ = 1/sqrt(J)
-    μ = h/J
-    ℓ0 = p0.λ * σ^2
-    ℓ = 1 + ℓ0;
-    z = ℓ * (1 + (1/p0.ρ-1) * exp(-0.5*(μ/σ)^2/ℓ) * sqrt(ℓ/ℓ0))
-    return μ / z, (σ^2 + μ^2*(1/ℓ - 1/z)) / z;
+    l = J + p0.λ
+    z = l * (1 + (1/p0.ρ-1) * exp(-h^2/2l) * sqrt(l/p0.λ))
+    return h / z, (1 + h^2*(1/l - 1/z)) / z
 end
 
 
