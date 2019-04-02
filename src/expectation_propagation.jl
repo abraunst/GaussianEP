@@ -58,13 +58,13 @@ end
 
 EP for approximate inference of
 
-``P(\\bf{x})=\\frac1Z exp(-\\frac12\\bf{x}' A \\bf{x} + \\bf{x'} \\bf{y}))×\\prod_i p_{i}(x_i)``
+``P( \\bf{x} )=\\frac1Z exp(-\\frac12\\bf{x}' A \\bf{x} + \\bf{x'} \\bf{y}))×\\prod_i p_{i}(x_i)``
 
 Arguments:
 
 * `A::Array{Term{T}}`: Gaussian Term (involving only x)
 * `P0::Array{Prior}`: Prior terms (involving x and y)
-* `F::AbstractMatrix{T}`: If included, the unknown becomes ``(\\bf{x},\\bf{y})^T`` and a term ``\\delta(F \\bf{x}+\\bf{d}-\\bf{y})`` is added.
+* `F::AbstractMatrix{T}`: If included, the unknown becomes ``(\\bf{x} ,\\bf{y} )^T`` and a term ``\\delta(F \\bf{x}+\\bf{d}-\\bf{y})`` is added.
 
 Optional named arguments:
 
