@@ -5,7 +5,7 @@ This type represents an interaction term in the energy function of the form
 
 The complete energy function is given by
 
-``∑_i β_i (\\frac12 x' A_i x + x' y_i + c_i) + M_i log β_i``
+``∑_i β_i (\\frac12 x' A_i x + x' y_i + c_i) + M_i \\log β_i``
 
 as is represented by an Vector{Term}. Note that c and M are only needed for paramenter learning
 """
