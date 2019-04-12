@@ -6,6 +6,6 @@ makedocs(sitename = "GaussianEP",
 	 doctest = true)
 deploydocs(
 	   branch = "gh-pages",
-	   repo = "github.com/mpieropan/GaussianEP.git",
+	   repo = "github.com/abraunst/GaussianEP.git",
 	   versions = ["stable" => "v^"]
 	  )
