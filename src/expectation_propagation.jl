@@ -31,7 +31,7 @@ EPState{T}(N, Nx = N) where {T <: AbstractFloat} = EPState{T}(Matrix{T}(undef,Nx
 Output of EP algorithm
 
 """
-struct EPOut{T<:AbstractFloat}
+mutable struct EPOut{T<:AbstractFloat}
     av::Vector{T}
     va::Vector{T}
     μ::Vector{T}
