@@ -75,7 +75,7 @@ Optional named arguments:
 * `epsconv::T = 1e-6`: convergence criterion
 * `maxvar::T = 1e50`: maximum variance
 * `minvar::T = 1e-50`: minimum variance
-* `inverter::Function = inv`: inverter method
+* `inverter = inv`: inverter method
 
 # Example
 
@@ -95,7 +95,7 @@ julia> res = expectation_propagation([t], P, F)
 GaussianEP.EPOut{Float64}([0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.489862, 0.489862, 3.66599e-15], [334.018, 334.018, 0.204341], :converged, EPState{Float64}([9.79055 -0.00299477; -0.00299477 9.79055], [0.0, 0.0], [0.102139 3.12427e-5; 3.12427e-5 0.102139], [0.489862, 0.489862], [0.499997, 0.499997, 3.66527e-15], [0.083325, 0.083325, 0.204301], [0.490876, 0.490876, -1.86785e-17], [0.489862, 0.489862, 3.66599e-15], [0.100288, 0.100288, 403.599], [334.018, 334.018, 0.204341]))
 ```
 """
-function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
+function expectation_propagation(H::AbstractVector{Term{T}}, P0::AbstractVector{P}, F::AbstractMatrix{T} = zeros(T,0,length(P0)), d::AbstractVector{T} = zeros(T,size(F,1));
                      maxiter::Int = 2000,
                      callback = (x...)->nothing,
                      state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
@@ -103,7 +103,7 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
                      epsconv::T = 1e-6,
                      maxvar::T = 1e50,
                      minvar::T = 1e-50,
-                     inverter::Function = inv) where {T <: Real, P <: Prior}
+                     inverter = inv) where {T <: Real, P <: Prior}
     @extract state A y Σ v av va a μ b s
     Ny,Nx = size(F)
     N = Nx + Ny
@@ -114,13 +114,14 @@ function expectation_propagation(H::Vector{Term{T}}, P0::Vector{P}, F::AbstractM
         Δμ, Δs, Δav, Δva = 0.0, 0.0, 0.0, 0.0
         A .+= Diagonal(1 ./ b[1:Nx]) .+ Fp * Diagonal(1 ./ b[Nx+1:end]) * F
         Σ .= inverter(A)
-        v .= Σ * (y .+ a[1:Nx] ./ b[1:Nx] .+ Fp * ((a[Nx+1:end]-d) ./ b[Nx+1:end]))
+        ax, bx, ay, by = @view a[1:Nx], @view b[1:Nx], @view a[Nx+1:end], @view b[Nx+1:end]
+        v .= Σ * (y .+ ax ./ bx .+ (Fp * ((ay-d) ./ by)))
         for i in 1:N
             if i <= Nx
                 ss = clamp(Σ[i,i], minvar, maxvar)
                 vv = v[i]
             else
-                x = Fp[:, i-Nx]
+                x = @view Fp[:, i-Nx]
                 ss = clamp(dot(x, Σ*x), minvar, maxvar)
                 vv = dot(x, v) + d[i-Nx]
             end
