@@ -88,6 +88,7 @@ mutable struct SpikeSlabPrior{T<:Real} <: Prior
     δλ::T
 end
 
+SpikeSlabPrior(ρ,λ) = SpikeSlabPrior(ρ,λ,0.0,0.0);
 
 """
 ``p = \\frac1{(ℓ+1)((1/ρ-1) e^{-\\frac12 (μ/σ)^2 (2-\\frac1{1+ℓ})}\\sqrt{1+\\frac1{ℓ}}+1)}``
@@ -179,13 +180,21 @@ end
 This is a fake Prior that can be used to fix experimental moments
 Parameters: μ, v (variance, not std)
 """
-struct PosteriorPrior{T<:Real} <: Prior
+struct Posterior2Prior{T<:Real} <: Prior
     μ::T
     v::T
 end
 
-function moments(p0::PosteriorPrior, μ, σ)
+function moments(p0::Posterior2Prior, μ, σ)
     return p0.μ,p0.v
+end
+
+struct Posterior1Prior{T<:Real} <: Prior
+    μ::T
+end
+
+function moments(p0::Posterior1Prior, μ, σ)
+    return p0.μ,σ^2
 end
 
 

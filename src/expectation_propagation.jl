@@ -99,10 +99,10 @@ function expectation_propagation(H::AbstractVector{Term{T}}, P0::AbstractVector{
                      maxiter::Int = 2000,
                      callback = (x...)->nothing,
                      state::EPState{T} = EPState{T}(sum(size(F)), size(F)[2]),
-                     damp::T = 0.9,
-                     epsconv::T = 1e-6,
-                     maxvar::T = 1e50,
-                     minvar::T = 1e-50,
+                     damp::T = T(0.9),
+                     epsconv::T = T(1e-6),
+                     maxvar::T = T(1e50),
+                     minvar::T = T(1e-50),
                      inverter = inv) where {T <: Real, P <: Prior}
     @extract state A y Σ v av va a μ b s
     Ny,Nx = size(F)
@@ -154,7 +154,7 @@ function expectation_propagation(H::AbstractVector{Term{T}}, P0::AbstractVector{
             updateβ(H[i], av[1:Nx])
         end
         callback(av,Δav,epsconv,maxiter,H,P0)
-        if Δav < epsconv
+        if Δav < epsconv && norm(F*av[1:Nx]+d-av[Nx+1:end]) < 1e-4
             return EPOut(state, :converged)
         end
     end
