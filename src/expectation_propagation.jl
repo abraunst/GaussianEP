@@ -113,6 +113,7 @@ function expectation_propagation(H::AbstractVector{Term{T}}, P0::AbstractVector{
         sum!(A,y,H)
         Δμ, Δs, Δav, Δva = 0.0, 0.0, 0.0, 0.0
         A .+= Diagonal(1 ./ b[1:Nx]) .+ Fp * Diagonal(1 ./ b[Nx+1:end]) * F
+        @assert isposdef(A)
         Σ .= inverter(A)
         ax, bx, ay, by = (@view a[1:Nx]), (@view b[1:Nx]), (@view a[Nx+1:end]), (@view b[Nx+1:end])
         v .= Σ * (y .+ ax ./ bx .+ (Fp * ((ay-d) ./ by)))
