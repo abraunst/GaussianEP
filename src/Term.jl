@@ -19,7 +19,7 @@ mutable struct Term{T <: Real}
     M::Int
 end
 
-Term(A,y,β = 1.0) = Term(A,y,0.0,β,0.0,0)
+Term(A,y,β = one(eltype(A))) = Term{eltype(A)}(A,y,zero(eltype(A)),eltype(A)(β),zero(eltype(A)),0)
 
 function (t::Term)(v::Vector)
     return v⋅(t.A*v-2*t.y) + t.c

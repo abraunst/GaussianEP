@@ -88,6 +88,7 @@ mutable struct SpikeSlabPrior{T<:Real} <: Prior
     δλ::T
 end
 
+SpikeSlabPrior(ρ,λ) = SpikeSlabPrior(ρ,λ,0.0,0.0);
 
 """
 ``p = \\frac1{(ℓ+1)((1/ρ-1) e^{-\\frac12 (μ/σ)^2 (2-\\frac1{1+ℓ})}\\sqrt{1+\\frac1{ℓ}}+1)}``
@@ -179,13 +180,21 @@ end
 This is a fake Prior that can be used to fix experimental moments
 Parameters: μ, v (variance, not std)
 """
-struct PosteriorPrior{T<:Real} <: Prior
+struct Posterior2Prior{T<:Real} <: Prior
     μ::T
     v::T
 end
 
-function moments(p0::PosteriorPrior, μ, σ)
+function moments(p0::Posterior2Prior, μ, σ)
     return p0.μ,p0.v
+end
+
+struct Posterior1Prior{T<:Real} <: Prior
+    μ::T
+end
+
+function moments(p0::Posterior1Prior, μ, σ)
+    return p0.μ,σ^2
 end
 
 
@@ -289,33 +298,3 @@ function moments(::ThetaPrior,μ,σ)
     return av,var
 end
 
-"""
-Bernoulli-Bernoulli RBM
-"""
-struct RBM_Bias_Factor{T<:Real} <: Prior
-    g::T
-end
-
-function moments(p0::RBM_Bias_Factor,μ,σ)
-    arg=-p0.g+(1.0-2.0*μ)/(2.0*σ^2.0)
-    av=1.0/(1.0+exp(arg))
-    va=0.5/(1.0+cosh(arg))
-    return av,va
-end
-
-"""
-Gaussian RBM units
-"""
-struct RBM_Gaussian_Factor{T<:Real} <: Prior
-    γ::T
-    θ::T
-end
-
-function moments(p0::RBM_Gaussian_Factor,μ,σ)
-    av = (μ+p0.θ*σ^2.0)/(1.0+p0.γ*σ^2.0)
-    secmom = ((μ+p0.θ*σ^2.0)^2.0+σ^2.0*(1.0+p0.γ*σ^2.0))/(1+p0.γ*σ^2.0)^2.0
-    #secmom = (μ^2.0+σ^2.0+2.0*p0.θ*μ*σ^2.0+(p0.γ+p0.θ^2.0)*σ^2.0)/(1+p0.γ*σ^2.0)^2.0
-    #va = clamp(secmom-av^2.0,1e-50,1e50)
-    va=1.0/(1.0/σ^2.0+p0.γ)
-    return av,va
-end
