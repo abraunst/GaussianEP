@@ -297,3 +297,35 @@ function moments(::ThetaPrior,μ,σ)
     var=σ^2*(1-α*pdf_cf(α)-pdf_cf(α)^2)
     return av,var
 end
+
+"""
+A mixture of theta priors: p_0(x)=η*Θ(x)+(1-η)*Θ(-x)
+"""
+mutable struct ThetaMixturePrior{T<:Real} <: Prior
+    η::T
+    δη::T
+end
+
+function theta_mixt_factor(x,η)
+    f=exp(-0.5*x^2.0)/(η*erfc(-sqrt(0.5)*x)+(1.0-η)*erfc(sqrt(0.5)*x))
+    return f
+end
+
+function moments(p0::ThetaMixturePrior,μ,σ)
+    η=p0.η
+    α=μ/σ
+    f=theta_mixt_factor(α,η)
+    χ=sqrt(2.0/π)*(2.0*η-1.0)*f
+    av=μ+σ*χ
+    va=σ^2.0*(1-χ^2.0)-μ*σ*χ
+    return av,va
+end
+
+function gradient(p0::ThetaMixturePrior,μ,σ)
+    η=p0.η
+    x=μ/σ/sqrt(2)
+    num=2*erf(x)
+    den=η*erfc(-x)+(1-η)*erfc(x)
+    p0.η+=p0.δη*num/den
+    p0.η=clamp(p0.η,0,1)
+end
