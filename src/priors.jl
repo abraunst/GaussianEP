@@ -297,4 +297,3 @@ function moments(::ThetaPrior,μ,σ)
     var=σ^2*(1-α*pdf_cf(α)-pdf_cf(α)^2)
     return av,var
 end
-
