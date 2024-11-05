@@ -3,9 +3,6 @@ uuid = "61ebe778-2184-11e9-3f76-6b275578b029"
 author = ["Alfredo Braunstein <alfredo.braunstein@polito.it>"]
 version = "1.0.0"
 
-[compat]
-julia = "1"
-
 [deps]
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -18,3 +15,7 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+julia = "1"
+
