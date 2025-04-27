@@ -39,7 +39,8 @@ mutable struct EPOut{T<:AbstractFloat}
     converged::Symbol
     state::EPState{T}
 end
-function EPOut(s, converged::Symbol) where {T <: AbstractFloat}
+
+function EPOut(s, converged::Symbol)
     converged ∈ (:converged,:unconverged) || error("$converged is not a valid symbol")
     return EPOut(s.av,s.va, s.μ,s.s,converged,s)
 end
